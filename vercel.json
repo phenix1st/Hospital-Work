@@ -1,0 +1,29 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/",
+            "destination": "/index.html"
+        },
+        {
+            "source": "/login",
+            "destination": "/login.html"
+        },
+        {
+            "source": "/register",
+            "destination": "/register.html"
+        },
+        {
+            "source": "/admin",
+            "destination": "/admin-dashboard.html"
+        },
+        {
+            "source": "/doctor",
+            "destination": "/doctor-dashboard.html"
+        },
+        {
+            "source": "/patient",
+            "destination": "/patient-dashboard.html"
+        }
+    ]
+}

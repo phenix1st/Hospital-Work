@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="title">Hospital Management System</title>
+    <!-- Bootstrap CSS -->
+    <link id="bootstrap-link" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg glass-card m-3 sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand text-primary" href="#">
+                <i class="fas fa-hospital-user me-2"></i>HMS
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <div class="dropdown lang-switcher">
+                            <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" onclick="setLanguage('en')">English</a></li>
+                                <li><a class="dropdown-item" onclick="setLanguage('fr')">Français</a></li>
+                                <li><a class="dropdown-item" onclick="setLanguage('ar')">العربية</a></li>
+                            </ul>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link" onclick="toggleTheme()">
+                            <i id="theme-icon" class="fas fa-moon"></i>
+                        </button>
+                    </li>
+                    <li class="nav-item ms-lg-3">
+                        <a href="login.html" class="btn btn-outline-primary btn-premium me-2" data-i18n="login">Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="register.html" class="btn btn-primary btn-premium" data-i18n="register">Register</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container hero-section fade-in">
+        <div class="row align-items-center">
+            <div class="col-lg-6 text-lg-start">
+                <h1 class="display-4 fw-bold mb-4" data-i18n="welcome">Welcome to HMS</h1>
+                <p class="lead mb-5">Manage your hospital operations efficiently with our modern, secure, and intuitive system.</p>
+                <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
+                    <a href="register.html" class="btn btn-primary btn-lg btn-premium" data-i18n="register">Get Started</a>
+                    <a href="#" class="btn btn-outline-secondary btn-lg btn-premium">Learn More</a>
+                </div>
+            </div>
+            <div class="col-lg-6 mt-5 mt-lg-0">
+                <img src="https://img.freepik.com/free-vector/medical-technology-concept-background_23-2148118086.jpg" alt="Medical Technology" class="img-fluid rounded-4 shadow-lg glass-card">
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center p-4 mt-auto">
+        <p class="text-muted" data-i18n="footer_text">© 2026 Hospital Management System</p>
+    </footer>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Multi-language Logic -->
+    <script src="js/i18n.js"></script>
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const theme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-bs-theme', theme);
+            const icon = document.getElementById('theme-icon');
+            icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+    </script>
+</body>
+</html>

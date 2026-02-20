@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-bs-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="register">Register - HMS</title>
+    <link id="bootstrap-link" rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body class="py-5">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="glass-card p-5 fade-in">
+                    <div class="text-center mb-4">
+                        <a href="index.html" class="navbar-brand text-primary fs-2">
+                            <i class="fas fa-hospital-user me-2"></i>HMS
+                        </a>
+                        <h3 class="mt-3" data-i18n="register">Register</h3>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between position-relative">
+                            <div class="step-line position-absolute top-50 start-0 end-0 bg-light-subtle h-25"
+                                style="z-index: 1;"></div>
+                            <div class="step-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center position-relative"
+                                style="width: 40px; height: 40px; z-index: 2;">1</div>
+                            <div id="step2-circle"
+                                class="step-circle bg-light text-muted rounded-circle d-flex align-items-center justify-content-center position-relative"
+                                style="width: 40px; height: 40px; z-index: 2;">2</div>
+                        </div>
+                    </div>
+
+                    <form id="registerForm">
+                        <!-- Step 1: Account Details -->
+                        <div id="step1">
+                            <h5 class="mb-3">Step 1: Account Details</h5>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Full Name</label>
+                                    <input type="text" id="fullName" class="form-control" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Role</label>
+                                    <select id="role" class="form-select" required onchange="toggleRoleFields()">
+                                        <option value="patient">Patient</option>
+                                        <option value="doctor">Doctor</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" id="regEmail" class="form-control" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label">Password</label>
+                                <input type="password" id="regPassword" class="form-control" required>
+                            </div>
+                            <button type="button" class="btn btn-primary w-100 btn-premium"
+                                onclick="showStep(2)">Next</button>
+                        </div>
+
+                        <!-- Step 2: Profile Details -->
+                        <div id="step2" style="display: none;">
+                            <h5 class="mb-3">Step 2: Profile Details</h5>
+                            <div class="mb-3">
+                                <label class="form-label">Address</label>
+                                <input type="text" id="address" class="form-control" required>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Mobile Number</label>
+                                <input type="tel" id="mobile" class="form-control" required>
+                            </div>
+
+                            <!-- Role Specific: Doctor -->
+                            <div id="doctorFields" style="display: none;">
+                                <div class="mb-3">
+                                    <label class="form-label">Department</label>
+                                    <select id="department" class="form-select">
+                                        <option value="cardiology">Cardiology</option>
+                                        <option value="neurology">Neurology</option>
+                                        <option value="pediatrics">Pediatrics</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Role Specific: Patient -->
+                            <div id="patientFields">
+                                <div class="mb-3">
+                                    <label class="form-label">Initial Symptoms</label>
+                                    <textarea id="symptoms" class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary w-50 btn-premium"
+                                    onclick="showStep(1)">Back</button>
+                                <button type="submit" class="btn btn-primary w-50 btn-premium">Complete
+                                    Registration</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="text-center mt-4">
+                        <p class="mb-0 text-muted">Already have an account? <a href="login.html"
+                                data-i18n="login">Login</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/i18n.js"></script>
+    <script>
+        function showStep(step) {
+            if (step === 1) {
+                document.getElementById('step1').style.display = 'block';
+                document.getElementById('step2').style.display = 'none';
+                document.getElementById('step2-circle').classList.replace('bg-primary', 'bg-light');
+                document.getElementById('step2-circle').classList.replace('text-white', 'text-muted');
+            } else {
+                document.getElementById('step1').style.display = 'none';
+                document.getElementById('step2').style.display = 'block';
+                document.getElementById('step2-circle').classList.replace('bg-light', 'bg-primary');
+                document.getElementById('step2-circle').classList.replace('text-muted', 'text-white');
+            }
+        }
+
+        function toggleRoleFields() {
+            const role = document.getElementById('role').value;
+            document.getElementById('doctorFields').style.display = role === 'doctor' ? 'block' : 'none';
+            document.getElementById('patientFields').style.display = role === 'patient' ? 'block' : 'none';
+        }
+    </script>
+    <script type="module">
+        import { register } from './js/auth.js';
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('role').value;
+
+            const profileData = {
+                fullName: document.getElementById('fullName').value,
+                address: document.getElementById('address').value,
+                mobile: document.getElementById('mobile').value,
+            };
+
+            if (role === 'doctor') {
+                profileData.department = document.getElementById('department').value;
+            } else {
+                profileData.symptoms = document.getElementById('symptoms').value;
+            }
+
+            try {
+                await register(email, password, role, profileData);
+                alert("Registration successful! Your account is pending admin approval.");
+                window.location.href = 'login.html';
+            } catch (error) {
+                alert("Registration failed: " + error.message);
+            }
+        });
+    </script>
+</body>
+
+</html>

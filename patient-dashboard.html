@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-bs-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="patient_dashboard">Patient Dashboard - HMS</title>
+    <link id="bootstrap-link" rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .sidebar {
+            width: 280px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid var(--glass-border);
+            padding-top: 2rem;
+        }
+
+        [dir="rtl"] .sidebar {
+            left: auto;
+            right: 0;
+            border-right: none;
+            border-left: 1px solid var(--glass-border);
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        [dir="rtl"] .main-content {
+            margin-left: 0;
+            margin-right: 280px;
+        }
+
+        .nav-link {
+            padding: 0.8rem 1.5rem;
+            color: var(--dark-color);
+            border-radius: 0 50px 50px 0;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        [dir="rtl"] .nav-link {
+            border-radius: 50px 0 0 50px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <aside class="sidebar">
+        <div class="px-4 mb-5">
+            <h2 class="text-primary fw-bold"><i class="fas fa-hospital-user me-2"></i>HMS</h2>
+            <small class="text-muted">Patient Portal</small>
+        </div>
+        <nav class="nav flex-column">
+            <a class="nav-link active" href="#"><i class="fas fa-home me-2"></i> Dashboard</a>
+            <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#bookingModal"><i
+                    class="fas fa-calendar-plus me-2"></i> Book Appointment</a>
+            <a class="nav-link" href="#"><i class="fas fa-history me-2"></i> My Appointments</a>
+            <a class="nav-link" href="#"><i class="fas fa-file-invoice me-2"></i> Bills & Invoices</a>
+            <hr class="mx-3">
+            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn"><i
+                    class="fas fa-sign-out-alt me-2"></i> Logout</a>
+        </nav>
+    </aside>
+
+    <main class="main-content">
+        <header class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h2 class="fw-bold">My Health</h2>
+                <p class="text-muted">Manage your appointments and medical records</p>
+            </div>
+            <div class="d-flex gap-3">
+                <button class="btn btn-outline-secondary" onclick="toggleTheme()">
+                    <i id="theme-icon" class="fas fa-moon"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="glass-card p-4">
+                    <h6>Upcoming Appointment</h6>
+                    <div id="next-appointment">
+                        <p class="text-muted">No upcoming appointments</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="mb-4">Recent Status</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Doctor</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="appointments-status-table">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4">
+                    <h5 class="mb-4">My Bills & Invoices</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Total</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="patient-bills-table">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Booking Modal -->
+    <div class="modal fade" id="bookingModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Book an Appointment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="bookingForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department</label>
+                                <select id="deptSelect" class="form-select" required>
+                                    <option value="">Select Department</option>
+                                    <option value="cardiology">Cardiology</option>
+                                    <option value="neurology">Neurology</option>
+                                    <option value="pediatrics">Pediatrics</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Doctor</label>
+                                <select id="doctorSelect" class="form-select" required>
+                                    <option value="">Select Doctor</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" id="appDate" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Time Slot</label>
+                                <select id="timeSlot" class="form-select" required>
+                                    <option value="">Select Time</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reason for Visit</label>
+                            <textarea id="appDesc" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-premium">Confirm Booking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/i18n.js"></script>
+    <script type="module" src="js/patient.js"></script>
+</body>
+
+</html>
