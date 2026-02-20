@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Admin Setup - HMS</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+
+<body class="d-flex align-items-center justify-content-center" style="min-height:100vh; background:#f0f4f8;">
+    <div class="card shadow p-5 text-center" style="max-width:450px; width:100%;">
+        <h3 class="mb-3">🏥 HMS Admin Setup</h3>
+        <p class="text-muted mb-4">This will sign in as admin and write their record to the database.</p>
+        <button id="setupBtn" class="btn btn-primary btn-lg" onclick="setupAdmin()">Setup Admin</button>
+        <div id="status" class="mt-4"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
+            authDomain: "hospital-aziz.firebaseapp.com",
+            databaseURL: "https://hospital-aziz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hospital-aziz",
+            storageBucket: "hospital-aziz.firebasestorage.app",
+            messagingSenderId: "417257060222",
+            appId: "1:417257060222:web:50a63a521c1b1cd542252f"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const rtdb = getDatabase(app);
+
+        window.setupAdmin = async () => {
+            const btn = document.getElementById('setupBtn');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            btn.textContent = 'Working...';
+
+            try {
+                // Step 1: Sign in as admin first (so we are authenticated)
+                status.innerHTML = `<div class="alert alert-info">🔐 Signing in...</div>`;
+                const cred = await signInWithEmailAndPassword(auth, "azizhospital@gmail.com", "123456");
+                const uid = cred.user.uid;
+
+                // Step 2: Write the admin record to RTDB (now authenticated)
+                status.innerHTML = `<div class="alert alert-info">💾 Writing admin record...</div>`;
+                await set(ref(rtdb, 'users/' + uid), {
+                    email: "azizhospital@gmail.com",
+                    fullName: "Hospital Admin",
+                    role: "admin",
+                    status: "approved",
+                    createdAt: new Date().toISOString()
+                });
+
+                status.innerHTML = `
+                    <div class="alert alert-success">
+                        ✅ <strong>Admin record created!</strong><br>
+                        UID used: <code>${uid}</code><br><br>
+                        <a href="login.html" class="btn btn-success btn-sm">Go to Login →</a>
+                    </div>`;
+                btn.textContent = 'Done!';
+            } catch (error) {
+                status.innerHTML = `<div class="alert alert-danger">❌ Error: <strong>${error.code}</strong><br>${error.message}</div>`;
+                btn.disabled = false;
+                btn.textContent = 'Retry';
+            }
+        };
+    </script>
+</body>
+
+</html>

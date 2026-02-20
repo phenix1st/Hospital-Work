@@ -1,14 +1,10 @@
-import { db, auth } from './firebase-config.js';
+import { rtdb, auth } from './firebase-config.js';
 import { logout } from './auth.js';
 import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-    doc,
-    updateDoc,
-    deleteDoc
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    ref,
+    onValue,
+    update
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
@@ -17,8 +13,7 @@ function initDoctorDashboard() {
     if (!user) return;
 
     // Load Appointments for this Doctor
-    const q = query(collection(db, "appointments"), where("doctorId", "==", user.uid));
-    onSnapshot(q, (snapshot) => {
+    onValue(ref(rtdb, 'appointments'), (snapshot) => {
         const tableBody = document.getElementById('doctor-appointments-table');
         tableBody.innerHTML = '';
 
@@ -26,9 +21,10 @@ function initDoctorDashboard() {
         let today = 0;
         const todayStr = new Date().toISOString().split('T')[0];
 
-        snapshot.forEach(doc => {
-            const app = doc.data();
-            const id = doc.id;
+        if (!snapshot.exists()) return;
+
+        Object.entries(snapshot.val()).forEach(([id, app]) => {
+            if (app.doctorId !== user.uid) return;
 
             if (app.status === 'pending') pending++;
             if (app.date === todayStr) today++;
@@ -37,12 +33,12 @@ function initDoctorDashboard() {
             row.innerHTML = `
                 <td>${app.patientName}</td>
                 <td>${app.date} | ${app.time}</td>
-                <td><small>${app.description || 'N/A'}</small></td>
+                <td><small>${app.description || (translations[currentLanguage]?.not_available || 'N/A')}</small></td>
                 <td>
                     ${app.status === 'pending' ? `
                         <button class="btn btn-sm btn-success me-1" onclick="updateAppStatus('${id}', 'approved')"><i class="fas fa-check"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="updateAppStatus('${id}', 'rejected')"><i class="fas fa-times"></i></button>
-                    ` : `<span class="badge bg-${app.status === 'approved' ? 'success' : 'danger'}">${app.status}</span>`}
+                    ` : `<span class="badge bg-${app.status === 'approved' ? 'success' : 'danger'}">${translations[currentLanguage]?.[app.status] || app.status}</span>`}
                 </td>
             `;
             tableBody.appendChild(row);
@@ -55,9 +51,9 @@ function initDoctorDashboard() {
 
 window.updateAppStatus = async (appId, status) => {
     try {
-        await updateDoc(doc(db, "appointments", appId), { status });
+        await update(ref(rtdb, 'appointments/' + appId), { status });
     } catch (error) {
-        alert("Error updating appointment: " + error.message);
+        alert((translations[currentLanguage]?.error_updating_appointment || "Error updating appointment: ") + error.message);
     }
 };
 

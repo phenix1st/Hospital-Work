@@ -1,33 +1,82 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" data-bs-theme="light">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="title">Hospital Management System</title>
-    <!-- Bootstrap CSS -->
-    <link id="bootstrap-link" rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <!-- Google Fonts -->
+    <link id="bootstrap-link" rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .section-divider {
+            border: none;
+            height: 3px;
+            background: linear-gradient(90deg, #0d6efd, #6ea8fe, transparent);
+            margin: 0;
+        }
+
+        .doctor-card:hover {
+            transform: translateY(-6px);
+            transition: .3s;
+        }
+
+        .doctor-avatar {
+            width: 90px;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3px solid #0d6efd;
+        }
+
+        .contact-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+    </style>
 </head>
+
 <body>
 
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg glass-card m-3 sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary" href="#">
-                <i class="fas fa-hospital-user me-2"></i>HMS
-            </a>
+            <a class="navbar-brand text-primary" href="#"><i class="fas fa-hospital-user me-2"></i>HMS</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="#hero" data-i18n="home">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features" data-i18n="services">Services</a></li>
+                    <li class="nav-item"><a class="nav-link" href="doctors.html" data-i18n="our_doctors">Our Doctors</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="#contact" data-i18n="contact">Contact</a></li>
+                </ul>
                 <ul class="navbar-nav ms-auto align-items-center">
                     <li class="nav-item">
                         <div class="dropdown lang-switcher">
-                            <button class="btn btn-link nav-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <button class="btn btn-link nav-link dropdown-toggle" type="button"
+                                data-bs-toggle="dropdown">
                                 <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
                             </button>
                             <ul class="dropdown-menu">
@@ -37,54 +86,252 @@
                             </ul>
                         </div>
                     </li>
-                    <li class="nav-item">
-                        <button class="btn btn-link nav-link" onclick="toggleTheme()">
-                            <i id="theme-icon" class="fas fa-moon"></i>
-                        </button>
-                    </li>
-                    <li class="nav-item ms-lg-3">
-                        <a href="login.html" class="btn btn-outline-primary btn-premium me-2" data-i18n="login">Login</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="register.html" class="btn btn-primary btn-premium" data-i18n="register">Register</a>
-                    </li>
+                    <li class="nav-item"><button class="btn btn-link nav-link" onclick="toggleTheme()"><i
+                                id="theme-icon" class="fas fa-moon"></i></button></li>
+                    <li class="nav-item ms-lg-3"><a href="login.html" class="btn btn-outline-primary btn-premium me-2"
+                            data-i18n="login">Login</a></li>
+                    <li class="nav-item"><a href="register.html" class="btn btn-primary btn-premium"
+                            data-i18n="register">Register</a></li>
                 </ul>
             </div>
         </div>
     </nav>
 
-    <div class="container hero-section fade-in">
+    <!-- HERO -->
+    <section id="hero" class="container hero-section fade-in">
         <div class="row align-items-center">
             <div class="col-lg-6 text-lg-start">
                 <h1 class="display-4 fw-bold mb-4" data-i18n="welcome">Welcome to HMS</h1>
-                <p class="lead mb-5">Manage your hospital operations efficiently with our modern, secure, and intuitive system.</p>
+                <p class="lead mb-5" data-i18n="welcome_desc">Manage your hospital operations efficiently with our
+                    modern, secure, and intuitive
+                    system. Book appointments, track your health, and stay connected with your doctors.</p>
                 <div class="d-flex gap-3 justify-content-center justify-content-lg-start">
-                    <a href="register.html" class="btn btn-primary btn-lg btn-premium" data-i18n="register">Get Started</a>
-                    <a href="#" class="btn btn-outline-secondary btn-lg btn-premium">Learn More</a>
+                    <a href="register.html" class="btn btn-primary btn-lg btn-premium" data-i18n="get_started">Get
+                        Started</a>
+                    <a href="doctors.html" class="btn btn-outline-secondary btn-lg btn-premium"
+                        data-i18n="our_doctors">Meet Our Doctors</a>
                 </div>
             </div>
             <div class="col-lg-6 mt-5 mt-lg-0">
-                <img src="https://img.freepik.com/free-vector/medical-technology-concept-background_23-2148118086.jpg" alt="Medical Technology" class="img-fluid rounded-4 shadow-lg glass-card">
+                <img src="images/doctors-team.jpg" alt="Our Medical Team" data-i18n="our_medical_team"
+                    class="img-fluid rounded-4 shadow-lg glass-card"
+                    style="object-fit:cover; max-height:480px; width:100%;">
             </div>
         </div>
-    </div>
+    </section>
 
-    <footer class="text-center p-4 mt-auto">
-        <p class="text-muted" data-i18n="footer_text">© 2026 Hospital Management System</p>
+    <hr class="section-divider my-5">
+
+    <!-- FEATURES / SERVICES -->
+    <section id="features" class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold" data-i18n="our_services">Our Services</h2>
+            <p class="text-muted" data-i18n="everything_needed">Everything you need, all in one place</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 text-center">
+                    <div class="feature-icon bg-primary bg-opacity-10 text-primary mx-auto"><i
+                            class="fas fa-calendar-check"></i></div>
+                    <h5 class="fw-bold" data-i18n="online_appointments">Online Appointments</h5>
+                    <p class="text-muted" data-i18n="online_appointments_desc">Book appointments with specialists in
+                        seconds, choose your time slot, and
+                        upload your medical files in advance.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 text-center">
+                    <div class="feature-icon bg-success bg-opacity-10 text-success mx-auto"><i
+                            class="fas fa-file-medical"></i></div>
+                    <h5 class="fw-bold" data-i18n="medical_records">Medical Records</h5>
+                    <p class="text-muted" data-i18n="medical_records_desc">Securely upload and manage your lab results,
+                        prescriptions, and scan reports —
+                        all accessible anytime.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card p-4 h-100 text-center">
+                    <div class="feature-icon bg-info bg-opacity-10 text-info mx-auto"><i
+                            class="fas fa-file-invoice-dollar"></i></div>
+                    <h5 class="fw-bold" data-i18n="billing">Billing & Invoices</h5>
+                    <p class="text-muted" data-i18n="billing_invoices_desc">View and download your detailed invoices at
+                        any time. Transparent billing with
+                        no surprises.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <hr class="section-divider my-5">
+
+    <!-- OUR DOCTORS PREVIEW -->
+    <section id="doctors-preview" class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold" data-i18n="meet_specialists">Meet Our Specialists</h2>
+            <p class="text-muted" data-i18n="trusted_experts">Trusted experts across all major departments</p>
+        </div>
+        <div class="row g-4" id="doctors-preview-grid">
+            <div class="col-12 text-center text-muted py-4"><i class="fas fa-spinner fa-spin me-2"></i><span
+                    data-i18n="loading">Loading doctors...</span></div>
+        </div>
+        <div class="text-center mt-4">
+            <a href="doctors.html" class="btn btn-outline-primary btn-premium" data-i18n="view_all_doctors">View All
+                Doctors →</a>
+        </div>
+    </section>
+
+    <hr class="section-divider my-5">
+
+    <!-- CONTACT US -->
+    <section id="contact" class="container py-5">
+        <div class="text-center mb-5">
+            <h2 class="fw-bold" data-i18n="get_in_touch">Contact Us</h2>
+            <p class="text-muted" data-i18n="reach_out">We're here to help — reach out any time</p>
+        </div>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-5">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="fw-bold mb-4" data-i18n="get_in_touch">Get in Touch</h5>
+                    <div class="d-flex align-items-center mb-4 gap-3">
+                        <div class="contact-icon bg-primary bg-opacity-10 text-primary"><i
+                                class="fas fa-map-marker-alt"></i></div>
+                        <div>
+                            <div class="fw-bold" data-i18n="address_label">Address</div><small class="text-muted"
+                                data-i18n="hospital_address">123
+                                Medical Drive, Health City,
+                                Algeria</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-4 gap-3">
+                        <div class="contact-icon bg-success bg-opacity-10 text-success"><i class="fas fa-phone-alt"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" data-i18n="phone_label">Phone</div><small class="text-muted"
+                                data-i18n="hospital_phone">+213 555
+                                123 456</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-4 gap-3">
+                        <div class="contact-icon bg-info bg-opacity-10 text-info"><i class="fas fa-envelope"></i></div>
+                        <div>
+                            <div class="fw-bold" data-i18n="email_label">Email</div><small class="text-muted"
+                                data-i18n="hospital_email">azizhospital@gmail.com</small>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="contact-icon bg-warning bg-opacity-10 text-warning"><i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold" data-i18n="working_hours">Working Hours</div><small class="text-muted"
+                                data-i18n="mon_sat">Mon–Sat: 8:00 AM – 8:00
+                                PM</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-5">
+                <div class="glass-card p-4 h-100">
+                    <h5 class="fw-bold mb-4" data-i18n="send_message">Send a Message</h5>
+                    <form id="contactForm">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" data-i18n="your_name" placeholder="Your Name"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="email" class="form-control" data-i18n="your_email" placeholder="Your Email"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" data-i18n="subject" placeholder="Subject">
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" rows="4" data-i18n="your_message"
+                                placeholder="Your message..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 btn-premium"
+                            data-i18n="send_message_btn">Send Message <i class="fas fa-paper-plane ms-2"></i></button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="glass-card m-3 mt-5 p-4">
+        <div class="row align-items-center">
+            <div class="col-md-4 text-center text-md-start mb-3 mb-md-0">
+                <span class="text-primary fw-bold fs-5"><i class="fas fa-hospital-user me-2"></i>HMS</span>
+                <p class="text-muted mb-0 mt-1 small" data-i18n="footer_text">© 2026 Hospital Management System</p>
+            </div>
+            <div class="col-md-4 text-center mb-3 mb-md-0">
+                <a href="#hero" class="text-muted me-3 small" data-i18n="home">Home</a>
+                <a href="doctors.html" class="text-muted me-3 small" data-i18n="our_doctors">Doctors</a>
+                <a href="#contact" class="text-muted small" data-i18n="contact">Contact</a>
+            </div>
+            <div class="col-md-4 text-center text-md-end">
+                <a href="#" class="text-muted me-3"><i class="fab fa-facebook"></i></a>
+                <a href="#" class="text-muted me-3"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="text-muted"><i class="fab fa-instagram"></i></a>
+            </div>
+        </div>
     </footer>
 
-    <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Multi-language Logic -->
     <script src="js/i18n.js"></script>
     <script>
         function toggleTheme() {
             const html = document.documentElement;
             const theme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-bs-theme', theme);
-            const icon = document.getElementById('theme-icon');
-            icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
+        document.getElementById('contactForm')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert(translations[currentLanguage]?.contact_success_alert || 'Thank you! We will get back to you shortly.');
+            e.target.reset();
+        });
+    </script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        const app = initializeApp({
+            apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
+            authDomain: "hospital-aziz.firebaseapp.com",
+            databaseURL: "https://hospital-aziz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hospital-aziz",
+            storageBucket: "hospital-aziz.firebasestorage.app",
+            messagingSenderId: "417257060222",
+            appId: "1:417257060222:web:50a63a521c1b1cd542252f"
+        });
+        const rtdb = getDatabase(app);
+        const DEPT_COLORS = { cardiology: 'danger', neurology: 'primary', pediatrics: 'success', orthopedics: 'warning', dermatology: 'info', oncology: 'secondary' };
+        const DEPT_ICONS = { cardiology: 'fa-heartbeat', neurology: 'fa-brain', pediatrics: 'fa-baby', orthopedics: 'fa-bone', dermatology: 'fa-spa', oncology: 'fa-ribbon' };
+
+        async function loadDoctorPreview() {
+            const snap = await get(ref(rtdb, 'users'));
+            const grid = document.getElementById('doctors-preview-grid');
+            if (!snap.exists()) { grid.innerHTML = '<div class="col-12 text-center text-muted">No doctors yet.</div>'; return; }
+            const doctors = Object.entries(snap.val())
+                .filter(([, u]) => u.role === 'doctor' && u.status === 'approved')
+                .slice(0, 3);
+            if (doctors.length === 0) { grid.innerHTML = '<div class="col-12 text-center text-muted">No doctors yet.</div>'; return; }
+            grid.innerHTML = doctors.map(([id, d]) => {
+                const color = DEPT_COLORS[d.department] || 'primary';
+                const icon = DEPT_ICONS[d.department] || 'fa-user-md';
+                return `<div class="col-md-4">
+                    <div class="glass-card p-4 text-center doctor-card h-100">
+                        <div class="rounded-circle bg-${color} bg-opacity-10 text-${color} d-flex align-items-center justify-content-center mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;">
+                            <i class="fas ${icon}"></i>
+                        </div>
+                        <h5 class="fw-bold mb-1">Dr. ${d.fullName}</h5>
+                        <span class="badge bg-${color} text-capitalize mb-2">${translations[currentLanguage][d.department] || d.department}</span>
+                        <p class="text-muted small mb-0">${d.mobile ? '📞 ' + d.mobile : (translations[currentLanguage]?.available_slots || 'Available for appointments')}</p>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        loadDoctorPreview();
     </script>
 </body>
+
 </html>

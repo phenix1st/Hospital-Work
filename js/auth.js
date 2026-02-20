@@ -1,26 +1,24 @@
-import { auth, db } from './firebase-config.js';
+import { auth, rtdb } from './firebase-config.js';
 import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     onAuthStateChanged,
     signOut
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
-    doc,
-    setDoc,
-    getDoc
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    ref,
+    set,
+    get
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 const ADMIN_EMAIL = "azizhospital@gmail.com";
 
 // Check User Role and Status
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-            const userData = userDoc.data();
-
-            // Redirect based on role and status
+        const userSnap = await get(ref(rtdb, 'users/' + user.uid));
+        if (userSnap.exists()) {
+            const userData = userSnap.val();
             const currentPath = window.location.pathname;
 
             // Special Admin Check
@@ -67,17 +65,17 @@ export async function login(email, password) {
 
 export async function register(email, password, role, profileData) {
     try {
-        // Prevent manual 'admin' registration via developer console
+        // Prevent manual 'admin' registration
         if (role === 'admin') throw new Error("Unauthorized role assignment.");
 
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        await setDoc(doc(db, "users", user.uid), {
+        await set(ref(rtdb, 'users/' + user.uid), {
             email: email,
             role: role,
             status: 'pending',
-            createdAt: new Date(),
+            createdAt: new Date().toISOString(),
             ...profileData
         });
 

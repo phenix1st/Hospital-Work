@@ -1,171 +1,271 @@
-import { db } from './firebase-config.js';
+import { rtdb, auth } from './firebase-config.js';
 import { logout } from './auth.js';
 import { generateInvoice } from './pdf-generator.js';
 import {
-    collection,
-    query,
-    where,
-    onSnapshot,
-    doc,
-    updateDoc,
-    deleteDoc,
-    getDocs,
-    addDoc
-} from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    ref, onValue, update, remove, push, get
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
-// Initialize Dashboard Stats
-function initStats() {
-    // Count Doctors
-    const doctorsQuery = query(collection(db, "users"), where("role", "==", "doctor"), where("status", "==", "approved"));
-    onSnapshot(doctorsQuery, (snapshot) => {
-        document.getElementById('count-doctors').innerText = snapshot.size;
+// ─── Global State ─────────────────────────────────────────────────────────────
+let allUsers = {};
+let allAppointments = {};
+let allBills = {};
+let userFilter = 'all';
+
+// ─── Real-time Listeners ──────────────────────────────────────────────────────
+function initListeners() {
+    // Users
+    onValue(ref(rtdb, 'users'), snap => {
+        allUsers = snap.val() || {};
+        updateOverviewCounts();
+        renderPendingUsers();
+        renderUsers();
+        renderDepartments();
     });
 
-    // Count Patients (Only those not yet discharged)
-    const patientsQuery = query(collection(db, "users"), where("role", "==", "patient"), where("status", "==", "approved"), where("discharged", "==", false));
-    onSnapshot(patientsQuery, (snapshot) => {
-        document.getElementById('count-patients').innerText = snapshot.size;
-        renderAdmittedPatients(snapshot);
+    // Appointments
+    onValue(ref(rtdb, 'appointments'), snap => {
+        allAppointments = snap.val() || {};
+        updateOverviewCounts();
+        renderAllAppointments();
     });
 
-    // Count Pending
-    const pendingQuery = query(collection(db, "users"), where("status", "==", "pending"));
-    onSnapshot(pendingQuery, (snapshot) => {
-        document.getElementById('count-pending').innerText = snapshot.size;
-        renderPendingUsers(snapshot);
-    });
-
-    // Count Appointments (Total)
-    const appointmentsQuery = collection(db, "appointments");
-    onSnapshot(appointmentsQuery, (snapshot) => {
-        document.getElementById('count-appointments').innerText = snapshot.size;
+    // Bills
+    onValue(ref(rtdb, 'bills'), snap => {
+        allBills = snap.val() || {};
+        renderBilling();
     });
 }
 
-function renderPendingUsers(snapshot) {
-    const tableBody = document.getElementById('pending-users-table');
-    tableBody.innerHTML = '';
+// ─── Overview Counts ─────────────────────────────────────────────────────────
+function updateOverviewCounts() {
+    let doctors = 0, patients = 0, pending = 0;
+    Object.values(allUsers).forEach(u => {
+        if (u.status === 'pending') pending++;
+        if (u.role === 'doctor' && u.status === 'approved') doctors++;
+        if (u.role === 'patient' && u.status === 'approved') patients++;
+    });
+    document.getElementById('count-doctors').innerText = doctors;
+    document.getElementById('count-patients').innerText = patients;
+    document.getElementById('count-pending').innerText = pending;
+    document.getElementById('count-appointments').innerText = Object.keys(allAppointments).length;
+}
 
-    if (snapshot.empty) {
-        tableBody.innerHTML = '<tr><td colspan="4" class="text-center py-4">No pending approvals.</td></tr>';
+// ─── Pending Users (Overview) ─────────────────────────────────────────────────
+function renderPendingUsers() {
+    const tbody = document.getElementById('pending-users-table');
+    const pending = Object.entries(allUsers).filter(([, u]) => u.status === 'pending');
+    if (pending.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_pending_approvals || 'No pending approvals.'}</td></tr>`;
         return;
     }
-
-    snapshot.forEach((userDoc) => {
-        const user = userDoc.data();
-        const id = userDoc.id;
-
-        const row = document.createElement('tr');
-        row.innerHTML = `
+    tbody.innerHTML = pending.map(([id, u]) => `
+        <tr>
             <td>
-                <div class="d-flex align-items-center">
-                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                        ${user.fullName ? user.fullName.charAt(0) : '?'}
-                    </div>
-                    <div>
-                        <div class="fw-bold">${user.fullName || 'Unknown'}</div>
-                        <small class="text-muted">${user.email}</small>
-                    </div>
-                </div>
+                <div class="fw-bold">${u.fullName || 'Unknown'}</div>
+                <small class="text-muted">${u.email}</small>
             </td>
-            <td><span class="badge bg-secondary text-capitalize">${user.role}</span></td>
+            <td><span class="badge bg-${u.role === 'doctor' ? 'primary' : 'success'} text-capitalize">${translations[currentLanguage]?.[u.role] || u.role}</span></td>
+            <td><small>${u.role === 'doctor' ? `${translations[currentLanguage]?.department || 'Dept'}: ${translations[currentLanguage]?.[u.department] || u.department || '-'}` : `${translations[currentLanguage]?.symptoms || 'Symptoms'}: ${(u.symptoms || 'None').substring(0, 30)}...`}</small></td>
             <td>
-                <small>
-                    ${user.role === 'doctor' ? `Dept: ${user.department}` : `Symptoms: ${user.symptoms ? user.symptoms.substring(0, 20) : 'None'}...`}
-                </small>
+                ${u.certificateURL
+            ? `<a href="${u.certificateURL}" target="_blank" class="btn btn-sm btn-outline-info cert-link"><i class="fas fa-file-pdf me-1"></i>${translations[currentLanguage]?.view_certificate || 'View'}</a>`
+            : '<span class="text-muted">—</span>'}
             </td>
             <td>
                 <button class="btn btn-sm btn-success me-1" onclick="approveUser('${id}')"><i class="fas fa-check"></i></button>
                 <button class="btn btn-sm btn-danger" onclick="rejectUser('${id}')"><i class="fas fa-times"></i></button>
             </td>
-        `;
-        tableBody.appendChild(row);
-    });
+        </tr>
+    `).join('');
 }
 
-function renderAdmittedPatients(snapshot) {
-    const tableBody = document.getElementById('admitted-patients-table');
-    tableBody.innerHTML = '';
+// ─── Manage Users ─────────────────────────────────────────────────────────────
+window.filterUsers = (f) => { userFilter = f; renderUsers(); };
 
-    if (snapshot.empty) {
-        tableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4">No patients admitted.</td></tr>';
+window.renderUsers = () => {
+    const tbody = document.getElementById('all-users-table');
+    const search = (document.getElementById('userSearch')?.value || '').toLowerCase();
+
+    let entries = Object.entries(allUsers).filter(([, u]) => u.role !== 'admin');
+
+    if (userFilter === 'pending') entries = entries.filter(([, u]) => u.status === 'pending');
+    else if (userFilter !== 'all') entries = entries.filter(([, u]) => u.role === userFilter);
+
+    if (search) entries = entries.filter(([, u]) =>
+        (u.fullName || '').toLowerCase().includes(search) ||
+        (u.email || '').toLowerCase().includes(search)
+    );
+
+    if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_users_found || 'No users found.'}</td></tr>`;
         return;
     }
 
-    snapshot.forEach((userDoc) => {
-        const user = userDoc.data();
-        const id = userDoc.id;
+    tbody.innerHTML = entries.map(([id, u]) => `
+        <tr>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold" style="width:38px;height:38px;flex-shrink:0;">
+                        ${(u.fullName || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <div class="fw-bold">${u.fullName || '—'}</div>
+                        <small class="text-muted">${u.email || ''}</small>
+                    </div>
+                </div>
+            </td>
+            <td><span class="badge bg-${u.role === 'doctor' ? 'primary' : 'success'} text-capitalize">${translations[currentLanguage]?.[u.role] || u.role}</span></td>
+            <td>
+                <span class="badge bg-${u.status === 'approved' ? 'success' : u.status === 'pending' ? 'warning text-dark' : 'secondary'} text-capitalize">${translations[currentLanguage]?.[u.status] || u.status}</span>
+            </td>
+            <td>
+                ${u.certificateURL
+            ? `<a href="${u.certificateURL}" target="_blank" class="btn btn-sm btn-outline-info cert-link"><i class="fas fa-file-pdf me-1"></i>${translations[currentLanguage]?.view_certificate || 'View'}</a>`
+            : '<span class="text-muted small">—</span>'}
+            </td>
+            <td class="d-flex gap-1 flex-wrap">
+                ${u.status === 'pending'
+            ? `<button class="btn btn-sm btn-success" onclick="approveUser('${id}')"><i class="fas fa-check"></i></button>`
+            : ''}
+                <button class="btn btn-sm btn-danger" onclick="deleteUser('${id}')"><i class="fas fa-trash"></i></button>
+            </td>
+        </tr>
+    `).join('');
+};
 
-        const row = document.createElement('tr');
-        row.innerHTML = `
+window.approveUser = async (uid) => {
+    await update(ref(rtdb, 'users/' + uid), { status: 'approved', discharged: false });
+};
+
+window.rejectUser = async (uid) => {
+    if (confirm(translations[currentLanguage]?.confirm_reject || 'Reject and delete this user?')) await remove(ref(rtdb, 'users/' + uid));
+};
+
+window.deleteUser = async (uid) => {
+    if (confirm(translations[currentLanguage]?.confirm_delete_user || 'Permanently delete this user? This cannot be undone.')) {
+        await remove(ref(rtdb, 'users/' + uid));
+    }
+};
+
+// ─── All Appointments ─────────────────────────────────────────────────────────
+function renderAllAppointments() {
+    const tbody = document.getElementById('all-appointments-table');
+    const entries = Object.entries(allAppointments);
+    if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = entries.map(([id, a]) => `
+        <tr>
+            <td><div class="fw-bold">${a.patientName || '—'}</div></td>
+            <td>${a.doctorName || '—'}</td>
+            <td>${a.date} ${a.time}</td>
+            <td><small>${(a.description || '—').substring(0, 40)}</small></td>
             <td>
-                <div class="fw-bold">${user.fullName}</div>
-                <small class="text-muted">${user.email}</small>
+                ${(a.medicalFiles && a.medicalFiles.length > 0)
+            ? a.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link"><i class="fas fa-file me-1"></i>${translations[currentLanguage]?.file || 'File'} ${i + 1}</a>`).join('')
+            : '<span class="text-muted small">—</span>'}
             </td>
-            <td>${user.createdAt?.toDate().toLocaleDateString() || 'N/A'}</td>
+            <td><span class="badge bg-${a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger'} text-capitalize">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
             <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="dischargePatient('${id}')">
-                    <i class="fas fa-file-invoice-dollar me-1"></i> Discharge
-                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
             </td>
-        `;
-        tableBody.appendChild(row);
-    });
+        </tr>
+    `).join('');
 }
 
-window.approveUser = async (userId) => {
-    try {
-        await updateDoc(doc(db, "users", userId), {
-            status: 'approved',
-            discharged: false // Initialize discharged flag
-        });
-    } catch (error) {
-        alert("Error approving user: " + error.message);
-    }
+window.deleteAppointment = async (id) => {
+    if (confirm(translations[currentLanguage]?.confirm_delete_appointment || 'Delete this appointment?')) await remove(ref(rtdb, 'appointments/' + id));
 };
 
-window.rejectUser = async (userId) => {
-    if (confirm("Are you sure you want to reject and delete this user?")) {
-        try {
-            await deleteDoc(doc(db, "users", userId));
-        } catch (error) {
-            alert("Error rejecting user: " + error.message);
-        }
+// ─── Departments ──────────────────────────────────────────────────────────────
+const DEPARTMENTS = [
+    { id: 'cardiology', name: 'Cardiology', icon: 'fas fa-heartbeat', color: 'danger' },
+    { id: 'neurology', name: 'Neurology', icon: 'fas fa-brain', color: 'primary' },
+    { id: 'pediatrics', name: 'Pediatrics', icon: 'fas fa-baby', color: 'success' },
+    { id: 'orthopedics', name: 'Orthopedics', icon: 'fas fa-bone', color: 'warning' },
+    { id: 'dermatology', name: 'Dermatology', icon: 'fas fa-spa', color: 'info' },
+    { id: 'oncology', name: 'Oncology', icon: 'fas fa-ribbon', color: 'secondary' },
+];
+
+function renderDepartments() {
+    const grid = document.getElementById('departments-grid');
+    grid.innerHTML = DEPARTMENTS.map(dept => {
+        const deptDoctors = Object.values(allUsers).filter(u => u.role === 'doctor' && u.department === dept.id && u.status === 'approved');
+        const deptName = translations[currentLanguage]?.[dept.id] || dept.name;
+        const countTxt = deptDoctors.length + ' ' + (deptDoctors.length === 1 ? (translations[currentLanguage]?.doctor_assigned || 'doctor') : (translations[currentLanguage]?.doctors_assigned || 'doctors'));
+
+        return `
+        <div class="col-md-4">
+            <div class="glass-card p-4">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="rounded-circle bg-${dept.color} text-white d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
+                        <i class="${dept.icon}"></i>
+                    </div>
+                    <div>
+                        <h5 class="mb-0">${deptName}</h5>
+                        <small class="text-muted">${countTxt}</small>
+                    </div>
+                </div>
+                ${deptDoctors.length > 0
+                ? `<ul class="list-unstyled mb-0">${deptDoctors.map(d => `<li class="d-flex align-items-center gap-2 mb-2"><i class="fas fa-user-md text-${dept.color}"></i><span>${d.fullName}</span></li>`).join('')}</ul>`
+                : `<p class="text-muted small mb-0">${translations[currentLanguage]?.no_doctors_assigned || 'No doctors assigned yet.'}</p>`}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ─── Billing ──────────────────────────────────────────────────────────────────
+function renderBilling() {
+    const tbody = document.getElementById('billing-table');
+    const entries = Object.entries(allBills);
+    if (entries.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr>`;
+        return;
     }
+    tbody.innerHTML = entries.map(([id, b]) => {
+        const patient = allUsers[b.patientId];
+        return `
+        <tr>
+            <td><div class="fw-bold">${patient?.fullName || (translations[currentLanguage]?.unknown || 'Unknown')}</div><small class="text-muted">${patient?.email || ''}</small></td>
+            <td>$${b.roomCharges || 0}</td>
+            <td>$${b.medicineCosts || 0}</td>
+            <td>$${b.doctorFees || 0}</td>
+            <td class="fw-bold text-primary">$${b.total || 0}</td>
+            <td>${b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '—'}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="downloadAdminInvoice('${id}')"><i class="fas fa-download me-1"></i>PDF</button>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+window.downloadAdminInvoice = async (billId) => {
+    const bill = allBills[billId];
+    const patient = allUsers[bill.patientId] || { fullName: (translations[currentLanguage]?.unknown || 'Unknown'), address: '' };
+    await generateInvoice(patient, bill);
 };
 
+// ─── Discharge a Patient ──────────────────────────────────────────────────────
 window.dischargePatient = async (patientId) => {
-    const room = parseFloat(prompt("Enter Room Charges:") || 0);
-    const medicine = parseFloat(prompt("Enter Medicine Costs:") || 0);
-    const doctor = parseFloat(prompt("Enter Doctor Fees:") || 0);
+    const room = parseFloat(prompt(translations[currentLanguage]?.enter_room_charges || 'Enter Room Charges:') || 0);
+    const medicine = parseFloat(prompt(translations[currentLanguage]?.enter_medicine_costs || 'Enter Medicine Costs:') || 0);
+    const doctor = parseFloat(prompt(translations[currentLanguage]?.enter_doctor_fees || 'Enter Doctor Fees:') || 0);
     const total = room + medicine + doctor;
-
     try {
-        // Fetch user data for the PDF
-        const docRef = doc(db, "users", patientId);
-        const userSnap = await getDocs(query(collection(db, "users"), where("__name__", "==", patientId)));
-        const userData = userSnap.docs[0].data();
-
-        const billData = {
-            patientId,
-            roomCharges: room,
-            medicineCosts: medicine,
-            doctorFees: doctor,
-            total,
-            createdAt: new Date()
-        };
-
-        await addDoc(collection(db, "bills"), billData);
-        await updateDoc(doc(db, "users", patientId), { discharged: true });
-
-        await generateInvoice(userData, billData);
-        alert("Patient discharged and invoice generated!");
-    } catch (error) {
-        alert("Error discharging patient: " + error.message);
-    }
+        const billData = { patientId, roomCharges: room, medicineCosts: medicine, doctorFees: doctor, total, createdAt: new Date().toISOString() };
+        await push(ref(rtdb, 'bills'), billData);
+        await update(ref(rtdb, 'users/' + patientId), { discharged: true });
+        await generateInvoice(allUsers[patientId] || {}, billData);
+        alert(translations[currentLanguage]?.discharge_success || 'Patient discharged and invoice generated!');
+    } catch (err) { alert((translations[currentLanguage]?.error_label || 'Error: ') + err.message); }
 };
 
-// Initialize
-document.addEventListener('DOMContentLoaded', initStats);
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    auth.onAuthStateChanged(user => {
+        if (user) initListeners();
+    });
+});

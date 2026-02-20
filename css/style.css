@@ -9,11 +9,13 @@
     --dark-color: #212529;
     --glass-bg: rgba(255, 255, 255, 0.7);
     --glass-border: rgba(255, 255, 255, 0.3);
+    --nav-link-color: var(--dark-color);
 }
 
 [data-bs-theme="dark"] {
     --glass-bg: rgba(33, 37, 41, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
+    --nav-link-color: rgba(255, 255, 255, 0.8);
 }
 
 body {

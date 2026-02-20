@@ -4,133 +4,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="register">Register - HMS</title>
+    <title>Register - HMS</title>
     <link id="bootstrap-link" rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .upload-zone {
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: .3s;
+        }
+
+        .upload-zone:hover {
+            border-color: #0d6efd;
+            background: rgba(13, 110, 253, .05);
+        }
+    </style>
 </head>
 
 <body class="py-5">
+    <!-- Language Switcher -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+        <div class="dropdown lang-switcher glass-card">
+            <button class="btn btn-link nav-link dropdown-toggle p-2" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" onclick="setLanguage('en')">English</a></li>
+                <li><a class="dropdown-item" onclick="setLanguage('fr')">Français</a></li>
+                <li><a class="dropdown-item" onclick="setLanguage('ar')">العربية</a></li>
+            </ul>
+        </div>
+    </div>
 
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="glass-card p-5 fade-in">
                     <div class="text-center mb-4">
-                        <a href="index.html" class="navbar-brand text-primary fs-2">
-                            <i class="fas fa-hospital-user me-2"></i>HMS
-                        </a>
-                        <h3 class="mt-3" data-i18n="register">Register</h3>
+                        <a href="index.html" class="navbar-brand text-primary fs-2"><i
+                                class="fas fa-hospital-user me-2"></i>HMS</a>
+                        <h3 class="mt-3" data-i18n="create_account">Create Account</h3>
                     </div>
 
+                    <!-- Step Indicators -->
                     <div class="mb-4">
                         <div class="d-flex justify-content-between position-relative">
                             <div class="step-line position-absolute top-50 start-0 end-0 bg-light-subtle h-25"
-                                style="z-index: 1;"></div>
+                                style="z-index:1;"></div>
                             <div class="step-circle bg-primary text-white rounded-circle d-flex align-items-center justify-content-center position-relative"
-                                style="width: 40px; height: 40px; z-index: 2;">1</div>
+                                style="width:40px;height:40px;z-index:2;">1</div>
                             <div id="step2-circle"
                                 class="step-circle bg-light text-muted rounded-circle d-flex align-items-center justify-content-center position-relative"
-                                style="width: 40px; height: 40px; z-index: 2;">2</div>
+                                style="width:40px;height:40px;z-index:2;">2</div>
                         </div>
                     </div>
 
+                    <div id="errorBox" class="alert alert-danger d-none"></div>
+
                     <form id="registerForm">
-                        <!-- Step 1: Account Details -->
+                        <!-- Step 1 -->
                         <div id="step1">
-                            <h5 class="mb-3">Step 1: Account Details</h5>
+                            <h5 class="mb-3" data-i18n="step1_title">Step 1: Account Details</h5>
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Full Name</label>
+                                    <label class="form-label" data-i18n="full_name">Full Name</label>
                                     <input type="text" id="fullName" class="form-control" required>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label">Role</label>
+                                    <label class="form-label" data-i18n="role">Role</label>
                                     <select id="role" class="form-select" required onchange="toggleRoleFields()">
-                                        <option value="patient">Patient</option>
-                                        <option value="doctor">Doctor</option>
+                                        <option value="patient" data-i18n="patient">Patient</option>
+                                        <option value="doctor" data-i18n="doctor">Doctor</option>
                                     </select>
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Email</label>
+                                <label class="form-label" data-i18n="email_label">Email</label>
                                 <input type="email" id="regEmail" class="form-control" required>
                             </div>
                             <div class="mb-4">
-                                <label class="form-label">Password</label>
-                                <input type="password" id="regPassword" class="form-control" required>
+                                <label class="form-label" data-i18n="password">Password</label>
+                                <input type="password" id="regPassword" class="form-control" required minlength="6">
                             </div>
-                            <button type="button" class="btn btn-primary w-100 btn-premium"
-                                onclick="showStep(2)">Next</button>
+                            <button type="button" class="btn btn-primary w-100 btn-premium" onclick="goToStep2()"
+                                data-i18n="next">Next
+                                →</button>
                         </div>
 
-                        <!-- Step 2: Profile Details -->
-                        <div id="step2" style="display: none;">
-                            <h5 class="mb-3">Step 2: Profile Details</h5>
+                        <!-- Step 2 -->
+                        <div id="step2" style="display:none;">
+                            <h5 class="mb-3" data-i18n="step2_title">Step 2: Profile Details</h5>
                             <div class="mb-3">
-                                <label class="form-label">Address</label>
+                                <label class="form-label" data-i18n="address_label">Address</label>
                                 <input type="text" id="address" class="form-control" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Mobile Number</label>
+                                <label class="form-label" data-i18n="mobile">Mobile Number</label>
                                 <input type="tel" id="mobile" class="form-control" required>
                             </div>
 
-                            <!-- Role Specific: Doctor -->
-                            <div id="doctorFields" style="display: none;">
+                            <!-- Doctor Fields -->
+                            <div id="doctorFields" style="display:none;">
                                 <div class="mb-3">
-                                    <label class="form-label">Department</label>
+                                    <label class="form-label" data-i18n="department">Department</label>
                                     <select id="department" class="form-select">
-                                        <option value="cardiology">Cardiology</option>
-                                        <option value="neurology">Neurology</option>
-                                        <option value="pediatrics">Pediatrics</option>
+                                        <option value="cardiology" data-i18n="cardiology">Cardiology</option>
+                                        <option value="neurology" data-i18n="neurology">Neurology</option>
+                                        <option value="pediatrics" data-i18n="pediatrics">Pediatrics</option>
+                                        <option value="orthopedics" data-i18n="orthopedics">Orthopedics</option>
+                                        <option value="dermatology" data-i18n="dermatology">Dermatology</option>
+                                        <option value="oncology" data-i18n="oncology">Oncology</option>
                                     </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"><i
+                                            class="fas fa-certificate me-2 text-primary"></i><span
+                                            data-i18n="medical_certificate">Medical Certificate</span> <small
+                                            class="text-muted fw-normal">(PDF or image)</small></label>
+                                    <div class="upload-zone" onclick="document.getElementById('certFile').click()">
+                                        <i class="fas fa-upload fa-2x text-muted mb-2"></i>
+                                        <p class="mb-0 text-muted" data-i18n="upload_cert_desc">Click to upload your
+                                            certificate</p>
+                                    </div>
+                                    <input type="file" id="certFile" accept=".pdf,.jpg,.jpeg,.png" class="d-none">
+                                    <div id="cert-preview" class="mt-2 text-muted small"></div>
                                 </div>
                             </div>
 
-                            <!-- Role Specific: Patient -->
+                            <!-- Patient Fields -->
                             <div id="patientFields">
                                 <div class="mb-3">
-                                    <label class="form-label">Initial Symptoms</label>
-                                    <textarea id="symptoms" class="form-control" rows="3"></textarea>
+                                    <label class="form-label" data-i18n="initial_symptoms">Initial Symptoms</label>
+                                    <textarea id="symptoms" class="form-control" rows="3"
+                                        data-i18n="symptoms_placeholder"
+                                        placeholder="Briefly describe your symptoms..."></textarea>
                                 </div>
+                            </div>
+
+                            <div id="upload-progress" class="d-none mb-3">
+                                <div class="progress">
+                                    <div id="progress-bar"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        style="width:0%"></div>
+                                </div>
+                                <small class="text-muted" data-i18n="uploading_cert">Uploading certificate...</small>
                             </div>
 
                             <div class="d-flex gap-2">
                                 <button type="button" class="btn btn-outline-secondary w-50 btn-premium"
-                                    onclick="showStep(1)">Back</button>
-                                <button type="submit" class="btn btn-primary w-50 btn-premium">Complete
+                                    onclick="showStep(1)" data-i18n="back">← Back</button>
+                                <button type="submit" id="submitBtn" class="btn btn-primary w-50 btn-premium"
+                                    data-i18n="complete_registration">Complete
                                     Registration</button>
                             </div>
                         </div>
                     </form>
 
                     <div class="text-center mt-4">
-                        <p class="mb-0 text-muted">Already have an account? <a href="login.html"
-                                data-i18n="login">Login</a></p>
+                        <p class="mb-0 text-muted"><span data-i18n="already_have_account">Already have an
+                                account?</span> <a href="login.html" data-i18n="login">Login</a></p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/i18n.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function showStep(step) {
-            if (step === 1) {
-                document.getElementById('step1').style.display = 'block';
-                document.getElementById('step2').style.display = 'none';
-                document.getElementById('step2-circle').classList.replace('bg-primary', 'bg-light');
-                document.getElementById('step2-circle').classList.replace('text-white', 'text-muted');
-            } else {
-                document.getElementById('step1').style.display = 'none';
-                document.getElementById('step2').style.display = 'block';
-                document.getElementById('step2-circle').classList.replace('bg-light', 'bg-primary');
-                document.getElementById('step2-circle').classList.replace('text-muted', 'text-white');
-            }
+            document.getElementById('step1').style.display = step === 1 ? 'block' : 'none';
+            document.getElementById('step2').style.display = step === 2 ? 'block' : 'none';
+            const c = document.getElementById('step2-circle');
+            if (step === 2) { c.classList.replace('bg-light', 'bg-primary'); c.classList.replace('text-muted', 'text-white'); }
+            else { c.classList.replace('bg-primary', 'bg-light'); c.classList.replace('text-white', 'text-muted'); }
         }
 
         function toggleRoleFields() {
@@ -138,37 +191,109 @@
             document.getElementById('doctorFields').style.display = role === 'doctor' ? 'block' : 'none';
             document.getElementById('patientFields').style.display = role === 'patient' ? 'block' : 'none';
         }
+
+        function goToStep2() {
+            const name = document.getElementById('fullName').value;
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPassword').value;
+            if (!name || !email || !pass) { document.getElementById('errorBox').textContent = 'Please fill all fields.'; document.getElementById('errorBox').classList.remove('d-none'); return; }
+            if (pass.length < 6) { document.getElementById('errorBox').textContent = 'Password must be at least 6 characters.'; document.getElementById('errorBox').classList.remove('d-none'); return; }
+            document.getElementById('errorBox').classList.add('d-none');
+            showStep(2);
+        }
+
+        document.getElementById('certFile')?.addEventListener('change', (e) => {
+            const f = e.target.files[0];
+            document.getElementById('cert-preview').textContent = f ? `✓ ${f.name} (${(f.size / 1024).toFixed(1)} KB)` : '';
+        });
     </script>
     <script type="module">
-        import { register } from './js/auth.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+        import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
+            authDomain: "hospital-aziz.firebaseapp.com",
+            databaseURL: "https://hospital-aziz-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "hospital-aziz",
+            storageBucket: "hospital-aziz.firebasestorage.app",
+            messagingSenderId: "417257060222",
+            appId: "1:417257060222:web:50a63a521c1b1cd542252f"
+        });
+        const auth = getAuth(app);
+        const rtdb = getDatabase(app);
+        const storage = getStorage(app);
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const email = document.getElementById('regEmail').value;
+            const btn = document.getElementById('submitBtn');
+            errorBox.classList.add('d-none');
+
+            const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value;
             const role = document.getElementById('role').value;
 
-            const profileData = {
-                fullName: document.getElementById('fullName').value,
-                address: document.getElementById('address').value,
-                mobile: document.getElementById('mobile').value,
-            };
+            btn.textContent = translations[currentLanguage].registering;
 
-            if (role === 'doctor') {
-                profileData.department = document.getElementById('department').value;
-            } else {
-                profileData.symptoms = document.getElementById('symptoms').value;
-            }
+            if (role === 'admin') { errorBox.textContent = 'Invalid role.'; errorBox.classList.remove('d-none'); btn.disabled = false; btn.textContent = 'Complete Registration'; return; }
 
             try {
-                await register(email, password, role, profileData);
-                alert("Registration successful! Your account is pending admin approval.");
+                // Create Firebase Auth user
+                const cred = await createUserWithEmailAndPassword(auth, email, password);
+                const uid = cred.user.uid;
+
+                // Upload doctor certificate if present
+                let certificateURL = null;
+                if (role === 'doctor') {
+                    const certInput = document.getElementById('certFile');
+                    if (certInput.files.length > 0) {
+                        const file = certInput.files[0];
+                        document.getElementById('upload-progress').classList.remove('d-none');
+                        const fileRef = sRef(storage, `certificates/${uid}_${file.name}`);
+                        await new Promise((resolve, reject) => {
+                            const task = uploadBytesResumable(fileRef, file);
+                            task.on('state_changed',
+                                snap => { document.getElementById('progress-bar').style.width = Math.round(snap.bytesTransferred / snap.totalBytes * 100) + '%'; },
+                                reject,
+                                async () => { certificateURL = await getDownloadURL(task.snapshot.ref); resolve(); }
+                            );
+                        });
+                        document.getElementById('upload-progress').classList.add('d-none');
+                    }
+                }
+
+                // Build profile data
+                const profileData = {
+                    email,
+                    fullName: document.getElementById('fullName').value,
+                    address: document.getElementById('address').value,
+                    mobile: document.getElementById('mobile').value,
+                    role,
+                    status: 'pending',
+                    createdAt: new Date().toISOString()
+                };
+                if (role === 'doctor') {
+                    profileData.department = document.getElementById('department').value;
+                    if (certificateURL) profileData.certificateURL = certificateURL;
+                } else {
+                    profileData.symptoms = document.getElementById('symptoms').value;
+                }
+
+                await set(ref(rtdb, 'users/' + uid), profileData);
+
+                alert(translations[currentLanguage].registration_success);
                 window.location.href = 'login.html';
             } catch (error) {
-                alert("Registration failed: " + error.message);
+                errorBox.textContent = 'Registration failed: ' + error.message;
+                errorBox.classList.remove('d-none');
+                btn.disabled = false;
+                btn.textContent = 'Complete Registration';
             }
         });
     </script>
+
 </body>
 
 </html>

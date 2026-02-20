@@ -1,4 +1,8 @@
-// Firebase Configuration
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { getStorage } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+
 const firebaseConfig = {
     apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
     authDomain: "hospital-aziz.firebaseapp.com",
@@ -10,17 +14,9 @@ const firebaseConfig = {
     measurementId: "G-WWSHJ8M124"
 };
 
-// Initialize Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
-import { getDatabase } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics.js";
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
 const rtdb = getDatabase(app);
-const analytics = getAnalytics(app);
+const storage = getStorage(app);
 
-export { auth, db, rtdb, analytics };
+export { auth, rtdb, storage };

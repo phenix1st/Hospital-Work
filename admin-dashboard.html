@@ -4,13 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="admin_dashboard">Admin Dashboard - HMS</title>
+    <title>Admin Dashboard - HMS</title>
     <link id="bootstrap-link" rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- jsPDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         .sidebar {
@@ -19,12 +18,13 @@
             position: fixed;
             top: 0;
             left: 0;
-            z-index: 100;
+            z-index: 1050;
             background: var(--glass-bg);
             backdrop-filter: blur(10px);
             border-right: 1px solid var(--glass-border);
             padding-top: 2rem;
-            transition: all 0.3s ease;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
         }
 
         [dir="rtl"] .sidebar {
@@ -37,6 +37,7 @@
         .main-content {
             margin-left: 280px;
             padding: 2rem;
+            transition: margin 0.3s ease;
         }
 
         [dir="rtl"] .main-content {
@@ -44,12 +45,49 @@
             margin-right: 280px;
         }
 
+        @media (max-width: 991.98px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            [dir="rtl"] .sidebar {
+                transform: translateX(100%);
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                padding: 1rem;
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1040;
+                backdrop-filter: blur(2px);
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+        }
+
         .nav-link {
-            padding: 0.8rem 1.5rem;
-            color: var(--dark-color);
+            padding: .8rem 1.5rem;
+            color: var(--nav-link-color);
             border-radius: 0 50px 50px 0;
-            margin-bottom: 0.5rem;
-            transition: all 0.3s ease;
+            margin-bottom: .5rem;
+            transition: all .3s ease;
+            cursor: pointer;
         }
 
         [dir="rtl"] .nav-link {
@@ -62,43 +100,82 @@
             color: white;
         }
 
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
         .stat-card {
             border-radius: 20px;
             padding: 1.5rem;
+        }
+
+        .badge-role-doctor {
+            background: #0d6efd;
+        }
+
+        .badge-role-patient {
+            background: #198754;
+        }
+
+        .cert-link {
+            font-size: .8rem;
         }
     </style>
 </head>
 
 <body>
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
-    <aside class="sidebar">
-        <div class="px-4 mb-5">
-            <h2 class="text-primary fw-bold"><i class="fas fa-hospital-user me-2"></i>HMS</h2>
-            <small class="text-muted">Admin Control Center</small>
+    <aside class="sidebar" id="sidebar">
+        <div class="px-4 mb-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="text-primary fw-bold mb-0"><i class="fas fa-hospital-user me-2"></i>HMS</h2>
+                <small class="text-muted" data-i18n="admin_portal">Admin Control Center</small>
+            </div>
+            <button class="btn d-lg-none p-0 text-muted" onclick="toggleSidebar()">
+                <i class="fas fa-times fs-4"></i>
+            </button>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link active" href="#"><i class="fas fa-chart-line me-2"></i> Dashboard</a>
-            <a class="nav-link" href="#" id="view-users"><i class="fas fa-users me-2"></i> Manage Users</a>
-            <a class="nav-link" href="#" id="view-appointments"><i class="fas fa-calendar-check me-2"></i>
+            <a class="nav-link active" onclick="showSection('overview'); closeSidebarOnMobile()"
+                data-i18n="dashboard"><i class="fas fa-chart-line me-2"></i>
+                Dashboard</a>
+            <a class="nav-link" onclick="showSection('users'); closeSidebarOnMobile()" data-i18n="manage_users"><i
+                    class="fas fa-users me-2"></i> Manage Users</a>
+            <a class="nav-link" onclick="showSection('appointments'); closeSidebarOnMobile()"
+                data-i18n="appointments"><i class="fas fa-calendar-check me-2"></i>
                 Appointments</a>
-            <a class="nav-link" href="#" id="view-departments"><i class="fas fa-building me-2"></i> Departments</a>
-            <a class="nav-link" href="#" id="view-billing"><i class="fas fa-file-invoice-dollar me-2"></i> Billing</a>
+            <a class="nav-link" onclick="showSection('departments'); closeSidebarOnMobile()" data-i18n="departments"><i
+                    class="fas fa-building me-2"></i>
+                Departments</a>
+            <a class="nav-link" onclick="showSection('billing'); closeSidebarOnMobile()" data-i18n="billing_nav"><i
+                    class="fas fa-file-invoice-dollar me-2"></i>
+                Billing</a>
             <hr class="mx-3">
-            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn"><i
-                    class="fas fa-sign-out-alt me-2"></i> Logout</a>
+            <a class="nav-link text-danger" id="logoutBtn" data-i18n="logout"><i class="fas fa-sign-out-alt me-2"></i>
+                Logout</a>
         </nav>
     </aside>
 
     <main class="main-content">
-        <header class="d-flex justify-content-between align-items-center mb-5">
-            <div>
-                <h2 class="fw-bold">Overview</h2>
-                <p class="text-muted">Welcome back, Administrator</p>
+        <header class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-primary d-lg-none" onclick="toggleSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                    <h2 class="fw-bold" id="section-title" data-i18n="overview">Overview</h2>
+                    <p class="text-muted mb-0" data-i18n="admin_welcome">Welcome back, Administrator</p>
+                </div>
             </div>
             <div class="d-flex gap-3">
                 <div class="dropdown lang-switcher">
-                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-globe"></i>
+                    <button class="btn btn-link nav-link dropdown-toggle p-2" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" onclick="setLanguage('en')">English</a></li>
@@ -106,80 +183,157 @@
                         <li><a class="dropdown-item" onclick="setLanguage('ar')">العربية</a></li>
                     </ul>
                 </div>
-                <button class="btn btn-outline-secondary" onclick="toggleTheme()">
-                    <i id="theme-icon" class="fas fa-moon"></i>
-                </button>
+                <button class="btn btn-outline-secondary" onclick="toggleTheme()"><i id="theme-icon"
+                        class="fas fa-moon"></i></button>
             </div>
         </header>
 
-        <!-- Stats Grid -->
-        <div class="row g-4 mb-5">
-            <div class="col-md-3">
-                <div class="glass-card stat-card bg-primary text-white">
-                    <h6>Total Doctors</h6>
-                    <h2 id="count-doctors">0</h2>
-                    <i class="fas fa-user-md float-end opacity-50" style="font-size: 2rem; margin-top: -30px;"></i>
+        <!-- OVERVIEW SECTION -->
+        <div id="section-overview" class="section active">
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <div class="glass-card stat-card bg-primary text-white">
+                        <h6 data-i18n="total_doctors">Total Doctors</h6>
+                        <h2 id="count-doctors">0</h2>
+                        <i class="fas fa-user-md float-end opacity-50" style="font-size:2rem;margin-top:-30px;"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card bg-success text-white">
+                        <h6 data-i18n="total_patients">Total Patients</h6>
+                        <h2 id="count-patients">0</h2>
+                        <i class="fas fa-user-injured float-end opacity-50"
+                            style="font-size:2rem;margin-top:-30px;"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card bg-info text-white">
+                        <h6 data-i18n="appointments">Appointments</h6>
+                        <h2 id="count-appointments">0</h2>
+                        <i class="fas fa-calendar-alt float-end opacity-50"
+                            style="font-size:2rem;margin-top:-30px;"></i>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="glass-card stat-card bg-warning text-white">
+                        <h6 data-i18n="pending_requests">Pending Requests</h6>
+                        <h2 id="count-pending">0</h2>
+                        <i class="fas fa-clock float-end opacity-50" style="font-size:2rem;margin-top:-30px;"></i>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="glass-card stat-card bg-success text-white">
-                    <h6>Total Patients</h6>
-                    <h2 id="count-patients">0</h2>
-                    <i class="fas fa-user-injured float-end opacity-50" style="font-size: 2rem; margin-top: -30px;"></i>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="glass-card stat-card bg-info text-white">
-                    <h6>Appointments</h6>
-                    <h2 id="count-appointments">0</h2>
-                    <i class="fas fa-calendar-alt float-end opacity-50" style="font-size: 2rem; margin-top: -30px;"></i>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="glass-card stat-card bg-warning text-white">
-                    <h6>Pending Requests</h6>
-                    <h2 id="count-pending">0</h2>
-                    <i class="fas fa-clock float-end opacity-50" style="font-size: 2rem; margin-top: -30px;"></i>
+            <div class="glass-card p-4">
+                <h5 class="mb-4" data-i18n="pending_approvals">Pending User Approvals</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="user">User</th>
+                                <th data-i18n="role">Role</th>
+                                <th data-i18n="details">Details</th>
+                                <th data-i18n="medical_certificate">Certificate</th>
+                                <th data-i18n="action">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-users-table">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3" data-i18n="loading">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- Pending Approvals Table -->
-        <div class="glass-card p-4 mb-5">
-            <h5 class="mb-4">Pending User Approvals</h5>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>User</th>
-                            <th>Role</th>
-                            <th>Details</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="pending-users-table">
-                        <!-- Rows dynamically populated -->
-                    </tbody>
-                </table>
+        <!-- MANAGE USERS SECTION -->
+        <div id="section-users" class="section">
+            <div class="mb-3 d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" onclick="filterUsers('all')" data-i18n="all">All</button>
+                <button class="btn btn-outline-success btn-sm" onclick="filterUsers('patient')"
+                    data-i18n="patients">Patients</button>
+                <button class="btn btn-outline-info btn-sm" onclick="filterUsers('doctor')"
+                    data-i18n="doctors">Doctors</button>
+                <button class="btn btn-outline-warning btn-sm" onclick="filterUsers('pending')"
+                    data-i18n="pending">Pending</button>
+                <input id="userSearch" class="form-control form-control-sm ms-auto" style="max-width:220px;"
+                    data-i18n="search_placeholder" placeholder="Search by name or email..." oninput="renderUsers()">
+            </div>
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="user">User</th>
+                                <th data-i18n="role">Role</th>
+                                <th data-i18n="status">Status</th>
+                                <th data-i18n="medical_certificate">Certificate</th>
+                                <th data-i18n="action">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-users-table">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3" data-i18n="loading">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Manage Patients Section -->
-        <div class="glass-card p-4">
-            <h5 class="mb-4">Admitted Patients & Billing</h5>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Patient</th>
-                            <th>Admission Date</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="admitted-patients-table">
-                        <!-- Dynamic content for discharge -->
-                    </tbody>
-                </table>
+        <!-- APPOINTMENTS SECTION -->
+        <div id="section-appointments" class="section">
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="patient">Patient</th>
+                                <th data-i18n="doctor">Doctor</th>
+                                <th data-i18n="date_time">Date & Time</th>
+                                <th data-i18n="visit_reason">Reason</th>
+                                <th data-i18n="medical_files">Medical Files</th>
+                                <th data-i18n="status">Status</th>
+                                <th data-i18n="action">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-appointments-table">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3" data-i18n="loading">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- DEPARTMENTS SECTION -->
+        <div id="section-departments" class="section">
+            <div class="row g-4" id="departments-grid"></div>
+        </div>
+
+        <!-- BILLING SECTION -->
+        <div id="section-billing" class="section">
+            <div class="glass-card p-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th data-i18n="patient">Patient</th>
+                                <th data-i18n="room_charges">Room</th>
+                                <th data-i18n="medicine_costs">Medicine</th>
+                                <th data-i18n="doctor_fee">Doctor Fee</th>
+                                <th data-i18n="total_cost">Total</th>
+                                <th data-i18n="date">Date</th>
+                                <th data-i18n="invoice">Invoice</th>
+                            </tr>
+                        </thead>
+                        <tbody id="billing-table">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-3" data-i18n="loading">Loading...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </main>
@@ -191,10 +345,40 @@
             const html = document.documentElement;
             const theme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-bs-theme', theme);
-            const icon = document.getElementById('theme-icon');
-            icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        function closeSidebarOnMobile() {
+            if (window.innerWidth < 992) {
+                toggleSidebar();
+            }
+        }
+
+        function showSection(name) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.getElementById('section-' + name).classList.add('active');
+
+            const titleEl = document.getElementById('section-title');
+            titleEl.setAttribute('data-i18n', name === 'overview' ? 'dashboard' : (name === 'users' ? 'manage_users' : (name === 'billing' ? 'billing_nav' : name)));
+
+            // Re-run i18n to update the title text
+            if (window.updateContent) window.updateContent();
+
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = ['overview', 'users', 'appointments', 'departments', 'billing'];
+            const idx = sections.indexOf(name);
+            if (idx !== -1) navLinks[idx].classList.add('active');
         }
     </script>
+    <script src="js/i18n.js"></script>
     <script type="module" src="js/admin.js"></script>
 </body>
 
