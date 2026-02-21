@@ -19,4 +19,4 @@ const auth = getAuth(app);
 const rtdb = getDatabase(app);
 const storage = getStorage(app);
 
-export { auth, rtdb, storage };
+export { auth, rtdb, storage, firebaseConfig };

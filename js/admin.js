@@ -1,9 +1,15 @@
-import { rtdb, auth } from './firebase-config.js';
+import { rtdb, auth, firebaseConfig } from './firebase-config.js';
 import { logout } from './auth.js';
 import { generateInvoice } from './pdf-generator.js';
 import {
     ref, onValue, update, remove, push, get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+// Initialize a secondary Firebase app for creating users without logging out admin
+const secondaryApp = initializeApp(firebaseConfig, "SecondaryApp");
+const secondaryAuth = getAuth(secondaryApp);
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
@@ -126,6 +132,8 @@ window.renderUsers = () => {
             : '<span class="text-muted small">—</span>'}
             </td>
             <td class="d-flex gap-1 flex-wrap">
+                <button class="btn btn-sm btn-outline-primary" onclick="viewUserContent('${id}')"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="openEditModal('${id}')"><i class="fas fa-edit"></i></button>
                 ${u.status === 'pending'
             ? `<button class="btn btn-sm btn-success" onclick="approveUser('${id}')"><i class="fas fa-check"></i></button>`
             : ''}
@@ -147,6 +155,139 @@ window.deleteUser = async (uid) => {
     if (confirm(translations[currentLanguage]?.confirm_delete_user || 'Permanently delete this user? This cannot be undone.')) {
         await remove(ref(rtdb, 'users/' + uid));
     }
+};
+
+// ─── Add/Edit User Logic ──────────────────────────────────────────────────────
+window.toggleAddUserFields = (role) => {
+    document.getElementById('add-doctor-fields').style.display = role === 'doctor' ? 'block' : 'none';
+    document.getElementById('add-patient-fields').style.display = role === 'patient' ? 'block' : 'none';
+};
+
+window.toggleEditUserFields = (role) => {
+    document.getElementById('edit-doctor-fields').style.display = role === 'doctor' ? 'block' : 'none';
+    document.getElementById('edit-patient-fields').style.display = role === 'patient' ? 'block' : 'none';
+};
+
+document.getElementById('addUserForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const role = formData.get('role');
+    const fullName = formData.get('fullName');
+    const department = formData.get('department');
+    const symptoms = formData.get('symptoms');
+
+    try {
+        const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+        const uid = userCredential.user.uid;
+
+        const userData = {
+            email,
+            role,
+            fullName,
+            status: 'approved',
+            createdAt: new Date().toISOString()
+        };
+
+        if (role === 'doctor') userData.department = department;
+        if (role === 'patient') userData.symptoms = symptoms;
+
+        await update(ref(rtdb, 'users/' + uid), userData);
+        await secondaryAuth.signOut(); // Security: sign out from secondary session
+
+        bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+        e.target.reset();
+        alert(translations[currentLanguage]?.user_added_success || 'User added successfully!');
+    } catch (err) {
+        alert("Error creating user: " + err.message);
+    }
+});
+
+window.openEditModal = (uid) => {
+    const u = allUsers[uid];
+    const form = document.getElementById('editUserForm');
+    form.uid.value = uid;
+    form.fullName.value = u.fullName || '';
+    form.role.value = u.role;
+    form.department.value = u.department || 'cardiology';
+    form.symptoms.value = u.symptoms || '';
+
+    toggleEditUserFields(u.role);
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+};
+
+document.getElementById('editUserForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const uid = formData.get('uid');
+    const role = formData.get('role');
+    const fullName = formData.get('fullName');
+    const department = formData.get('department');
+    const symptoms = formData.get('symptoms');
+
+    try {
+        const updates = { fullName, role };
+        if (role === 'doctor') {
+            updates.department = department;
+            updates.symptoms = null;
+        } else {
+            updates.symptoms = symptoms;
+            updates.department = null;
+        }
+
+        await update(ref(rtdb, 'users/' + uid), updates);
+        bootstrap.Modal.getInstance(document.getElementById('editUserModal')).hide();
+        alert(translations[currentLanguage]?.user_updated_success || 'User updated successfully!');
+    } catch (err) {
+        alert("Error updating user: " + err.message);
+    }
+});
+
+window.viewUserContent = (uid) => {
+    const u = allUsers[uid];
+    const appointments = Object.values(allAppointments).filter(a => a.patientId === uid || a.doctorId === uid);
+    const bills = Object.values(allBills).filter(b => b.patientId === uid);
+
+    let html = `<h6>${translations[currentLanguage]?.account_details || 'Account Details'}</h6>
+                <p><strong>${translations[currentLanguage]?.full_name || 'Name'}:</strong> ${u.fullName}<br>
+                <strong>${translations[currentLanguage]?.email_label || 'Email'}:</strong> ${u.email}<br>
+                <strong>${translations[currentLanguage]?.role || 'Role'}:</strong> ${u.role}</p>
+                <hr>
+                <h6>${translations[currentLanguage]?.appointments || 'Appointments'}</h6>`;
+
+    if (appointments.length === 0) {
+        html += `<p class="text-muted small">${translations[currentLanguage]?.no_appointments || 'No appointments'}</p>`;
+    } else {
+        html += `<ul class="list-group list-group-flush mb-3">` + appointments.map(a => `
+            <li class="list-group-item px-0 bg-transparent">
+                <div class="d-flex justify-content-between">
+                    <span>${a.date} ${a.time}</span>
+                    <span class="badge bg-${a.status === 'approved' ? 'success' : 'warning text-dark'}">${a.status}</span>
+                </div>
+                <small class="text-muted">${a.description || ''}</small>
+            </li>
+        `).join('') + `</ul>`;
+    }
+
+    if (u.role === 'patient') {
+        html += `<h6>${translations[currentLanguage]?.billing || 'Billing'}</h6>`;
+        if (bills.length === 0) {
+            html += `<p class="text-muted small">${translations[currentLanguage]?.no_bills_yet || 'No bills'}</p>`;
+        } else {
+            html += `<ul class="list-group list-group-flush">` + bills.map(b => `
+                <li class="list-group-item px-0 bg-transparent">
+                    <div class="d-flex justify-content-between fw-bold">
+                        <span>${new Date(b.createdAt).toLocaleDateString()}</span>
+                        <span>$${b.total}</span>
+                    </div>
+                </li>
+            `).join('') + `</ul>`;
+        }
+    }
+
+    document.getElementById('user-content-body').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('viewContentModal')).show();
 };
 
 // ─── All Appointments ─────────────────────────────────────────────────────────

@@ -247,16 +247,24 @@
 
         <!-- MANAGE USERS SECTION -->
         <div id="section-users" class="section">
-            <div class="mb-3 d-flex gap-2 flex-wrap">
-                <button class="btn btn-outline-primary btn-sm" onclick="filterUsers('all')" data-i18n="all">All</button>
-                <button class="btn btn-outline-success btn-sm" onclick="filterUsers('patient')"
-                    data-i18n="patients">Patients</button>
-                <button class="btn btn-outline-info btn-sm" onclick="filterUsers('doctor')"
-                    data-i18n="doctors">Doctors</button>
-                <button class="btn btn-outline-warning btn-sm" onclick="filterUsers('pending')"
-                    data-i18n="pending">Pending</button>
-                <input id="userSearch" class="form-control form-control-sm ms-auto" style="max-width:220px;"
-                    data-i18n="search_placeholder" placeholder="Search by name or email..." oninput="renderUsers()">
+            <div class="mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="filterUsers('all')"
+                        data-i18n="all">All</button>
+                    <button class="btn btn-outline-success btn-sm" onclick="filterUsers('patient')"
+                        data-i18n="patients">Patients</button>
+                    <button class="btn btn-outline-info btn-sm" onclick="filterUsers('doctor')"
+                        data-i18n="doctors">Doctors</button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="filterUsers('pending')"
+                        data-i18n="pending">Pending</button>
+                </div>
+                <div class="d-flex gap-2 ms-auto">
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                        <i class="fas fa-plus me-1"></i> <span data-i18n="add_user">Add User</span>
+                    </button>
+                    <input id="userSearch" class="form-control form-control-sm" style="max-width:220px;"
+                        data-i18n="search_placeholder" placeholder="Search by name or email..." oninput="renderUsers()">
+                </div>
             </div>
             <div class="glass-card p-4">
                 <div class="table-responsive">
@@ -337,6 +345,126 @@
             </div>
         </div>
     </main>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="glass-card modal-content border-0">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" data-i18n="add_user">Add User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="full_name">Full Name</label>
+                            <input type="text" class="form-control" name="fullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="email_label">Email</label>
+                            <input type="email" class="form-control" name="email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="temp_password">Temporary Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="role">Role</label>
+                            <select class="form-select" name="role" required onchange="toggleAddUserFields(this.value)">
+                                <option value="patient" data-i18n="patient">Patient</option>
+                                <option value="doctor" data-i18n="doctor">Doctor</option>
+                            </select>
+                        </div>
+                        <div id="add-doctor-fields" style="display:none;">
+                            <div class="mb-3">
+                                <label class="form-label" data-i18n="department">Department</label>
+                                <select class="form-select" name="department">
+                                    <option value="cardiology">Cardiology</option>
+                                    <option value="neurology">Neurology</option>
+                                    <option value="pediatrics">Pediatrics</option>
+                                    <option value="orthopedics">Orthopedics</option>
+                                    <option value="dermatology">Dermatology</option>
+                                    <option value="oncology">Oncology</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="add-patient-fields">
+                            <div class="mb-3">
+                                <label class="form-label" data-i18n="initial_symptoms">Symptoms</label>
+                                <textarea class="form-control" name="symptoms" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3" data-i18n="add_user">Add User</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="glass-card modal-content border-0">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" data-i18n="edit_user">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" name="uid">
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="full_name">Full Name</label>
+                            <input type="text" class="form-control" name="fullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" data-i18n="role">Role</label>
+                            <select class="form-select" name="role" required
+                                onchange="toggleEditUserFields(this.value)">
+                                <option value="patient" data-i18n="patient">Patient</option>
+                                <option value="doctor" data-i18n="doctor">Doctor</option>
+                            </select>
+                        </div>
+                        <div id="edit-doctor-fields" style="display:none;">
+                            <div class="mb-3">
+                                <label class="form-label" data-i18n="department">Department</label>
+                                <select class="form-select" name="department">
+                                    <option value="cardiology">Cardiology</option>
+                                    <option value="neurology">Neurology</option>
+                                    <option value="pediatrics">Pediatrics</option>
+                                    <option value="orthopedics">Orthopedics</option>
+                                    <option value="dermatology">Dermatology</option>
+                                    <option value="oncology">Oncology</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="edit-patient-fields">
+                            <div class="mb-3">
+                                <label class="form-label" data-i18n="initial_symptoms">Symptoms</label>
+                                <textarea class="form-control" name="symptoms" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 mt-3" data-i18n="save_changes">Save
+                            Changes</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Content Modal -->
+    <div class="modal fade" id="viewContentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="glass-card modal-content border-0">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title" data-i18n="user_content">User Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="user-content-body">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/i18n.js"></script>
