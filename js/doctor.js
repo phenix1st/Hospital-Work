@@ -12,25 +12,66 @@ import {
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
+import { generateInvoice } from './pdf-generator.js';
+
 let currentUploadAppId = null;
+let allAppointments = {};
+let allUsers = {};
+let allBills = {};
+
+// ─── Navigation & UI Toggling ────────────────────────────────────────────────
+window.showSection = (sectionId) => {
+    document.getElementById('requests-section').classList.add('d-none');
+    document.getElementById('patients-section').classList.add('d-none');
+    document.getElementById('history-section').classList.add('d-none');
+    document.getElementById(sectionId).classList.remove('d-none');
+
+    // Update active nav link
+    document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+    if (sectionId === 'requests-section') document.querySelector('[data-i18n="my_schedule"]')?.classList.add('active');
+    if (sectionId === 'patients-section') document.querySelector('[data-i18n="my_patients"]')?.classList.add('active');
+    if (sectionId === 'history-section') document.querySelector('[data-i18n="history"]')?.classList.add('active');
+};
+
+window.showHistorySection = () => {
+    showSection('history-section');
+    renderHistory();
+};
 
 function initDoctorDashboard() {
     const user = auth.currentUser;
     if (!user) return;
 
+    // Load Users (for patient data)
+    onValue(ref(rtdb, 'users'), (snap) => {
+        allUsers = snap.exists() ? snap.val() : {};
+        if (Object.keys(allAppointments).length > 0) {
+            renderMyPatients();
+            renderHistory();
+        }
+    });
+
+    // Load Bills (for history)
+    onValue(ref(rtdb, 'bills'), (snap) => {
+        allBills = snap.exists() ? snap.val() : {};
+        if (Object.keys(allAppointments).length > 0) renderHistory();
+    });
+
     // Load Appointments for this Doctor
     onValue(ref(rtdb, 'appointments'), (snapshot) => {
+        allAppointments = snapshot.exists() ? snapshot.val() : {};
         const tableBody = document.getElementById('doctor-appointments-table');
-        tableBody.innerHTML = '';
+        if (tableBody) tableBody.innerHTML = '';
 
         let pending = 0;
         let today = 0;
         const todayStr = new Date().toISOString().split('T')[0];
 
-        if (!snapshot.exists()) return;
-
-        Object.entries(snapshot.val()).forEach(([id, app]) => {
+        Object.entries(allAppointments).forEach(([id, app]) => {
             if (app.doctorId !== user.uid) return;
+
+            // Only show active (pending/approved) in the main schedule
+            if (app.status === 'completed' || app.status === 'rejected' || app.status === 'deleted') return;
 
             if (app.status === 'pending') pending++;
             if (app.date === todayStr) today++;
@@ -53,27 +94,173 @@ function initDoctorDashboard() {
                     </div>
                 </td>
                 <td>
-                    ${app.status === 'pending' ? `
-                        <button class="btn btn-sm btn-success me-1" onclick="updateAppStatus('${id}', 'approved')"><i class="fas fa-check"></i></button>
-                        <button class="btn btn-sm btn-danger" onclick="updateAppStatus('${id}', 'rejected')"><i class="fas fa-times"></i></button>
-                    ` : app.status === 'approved' ? `
-                        <button class="btn btn-sm btn-outline-danger" onclick="dischargeFromDoctor('${id}', '${app.patientId}')">
-                            <i class="fas fa-sign-out-alt me-1"></i> <span data-i18n="discharge_patient">${translations[currentLanguage]?.discharge_patient || 'Discharge'}</span>
+                    <div class="d-flex gap-1">
+                        ${app.status === 'pending' ? `
+                            <button class="btn btn-sm btn-success" onclick="updateAppStatus('${id}', 'approved')"><i class="fas fa-check"></i></button>
+                            <button class="btn btn-sm btn-warning" onclick="updateAppStatus('${id}', 'rejected')"><i class="fas fa-times"></i></button>
+                        ` : app.status === 'approved' ? `
+                            <button class="btn btn-sm btn-outline-danger" onclick="dischargeFromDoctor('${id}', '${app.patientId}')">
+                                <i class="fas fa-sign-out-alt me-1"></i> <span data-i18n="discharge_patient">${translations[currentLanguage]?.discharge_patient || 'Discharge'}</span>
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteAppointment('${id}')" title="${translations[currentLanguage]?.delete || 'Delete'}">
+                            <i class="fas fa-trash"></i>
                         </button>
-                    ` : `<span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : 'danger')}">${translations[currentLanguage]?.[app.status] || app.status}</span>`}
+                    </div>
                 </td>
             `;
-            tableBody.appendChild(row);
+            if (tableBody) tableBody.appendChild(row);
         });
 
-        document.getElementById('pending-appointments').innerText = pending;
-        document.getElementById('today-load').innerText = today;
+        const pendingEl = document.getElementById('pending-appointments');
+        const todayEl = document.getElementById('today-load');
+        const dischargedEl = document.getElementById('discharged-count');
 
-        // Count discharged patients (completed status)
-        const dischargedCount = Object.values(snapshot.val()).filter(a => a.doctorId === user.uid && a.status === 'completed').length;
-        document.getElementById('discharged-count').innerText = dischargedCount;
+        if (pendingEl) pendingEl.innerText = pending;
+        if (todayEl) todayEl.innerText = today;
+
+        const dischargedCount = Object.values(allAppointments).filter(a => a.doctorId === user.uid && a.status === 'completed').length;
+        if (dischargedEl) dischargedEl.innerText = dischargedCount;
+
+        renderMyPatients();
+        renderHistory();
     });
 }
+
+window.renderMyPatients = (query = '') => {
+    const user = auth.currentUser;
+    const tbody = document.getElementById('my-patients-table');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const patientMap = new Map();
+    Object.values(allAppointments).forEach(app => {
+        if (app.doctorId === user.uid) {
+            const pId = app.patientId;
+            const pData = allUsers[pId] || { fullName: app.patientName, email: '—' };
+            const symptoms = (app.description || '').toLowerCase();
+            const name = (pData.fullName || '').toLowerCase();
+            const q = query.toLowerCase();
+
+            if (!query || name.includes(q) || symptoms.includes(q)) {
+                if (!patientMap.has(pId) || new Date(app.date) > new Date(patientMap.get(pId).date)) {
+                    patientMap.set(pId, { ...pData, lastVisit: app.date, id: pId });
+                }
+            }
+        }
+    });
+
+    patientMap.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><div class="fw-bold">${p.fullName}</div></td>
+            <td>${p.email}</td>
+            <td>${p.lastVisit}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="viewPatientHistory('${p.id}')">
+                    <i class="fas fa-history me-1"></i> <span data-i18n="history_records">${translations[currentLanguage]?.history_records || 'Records'}</span>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+window.renderHistory = () => {
+    const user = auth.currentUser;
+    const tbody = document.getElementById('history-table-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const history = Object.entries(allAppointments)
+        .filter(([id, a]) => a.doctorId === user.uid && (a.status === 'completed' || a.status === 'rejected'))
+        .sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
+
+    history.forEach(([id, a]) => {
+        const bill = Object.values(allBills).find(b => b.appointmentId === id);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${a.patientName}</td>
+            <td>${a.date}</td>
+            <td><small>${a.description || ''}</small></td>
+            <td>
+                ${bill ? `<button class="btn btn-sm btn-link" onclick="downloadPatientInvoice('${id}')"><i class="fas fa-file-pdf me-1"></i>$${bill.total}</button>` : '—'}
+            </td>
+            <td><span class="badge bg-${a.status === 'completed' ? 'info' : 'secondary'}">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+window.downloadPatientInvoice = async (appId) => {
+    const bill = Object.values(allBills).find(b => b.appointmentId === appId);
+    if (!bill) return;
+    const patient = allUsers[bill.patientId] || { fullName: (translations[currentLanguage]?.unknown || 'Patient'), address: '—' };
+    await generateInvoice(patient, bill);
+};
+
+window.handlePatientSearch = (val) => renderMyPatients(val);
+
+window.viewPatientHistory = (pId) => {
+    const p = allUsers[pId] || { fullName: (translations[currentLanguage]?.unknown || 'Patient') };
+    const history = Object.values(allAppointments).filter(a => a.patientId === pId && a.status !== 'deleted');
+    const bills = Object.values(allBills).filter(b => b.patientId === pId);
+
+    let html = `<div class="mb-4">
+        <h6 class="fw-bold text-primary">${p.fullName}</h6>
+        <p class="small text-muted mb-0">${p.email || ''}</p>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h6 class="border-bottom pb-2 mb-3" data-i18n="appointments">${translations[currentLanguage]?.appointments || 'Appointments'}</h6>
+            <ul class="list-group list-group-flush mb-4 scrollable-list" style="max-height: 300px; overflow-y: auto;">
+                ${history.map(a => `
+                    <li class="list-group-item px-0 bg-transparent">
+                        <div class="d-flex justify-content-between small fw-bold">
+                            <span>${a.date}</span>
+                            <span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : (a.status === 'pending' ? 'warning' : 'secondary'))}">${translations[currentLanguage]?.[a.status] || a.status}</span>
+                        </div>
+                        <div class="small text-muted">${a.description || ''}</div>
+                    </li>
+                `).reverse().join('')}
+            </ul>
+        </div>
+        <div class="col-md-6">
+            <h6 class="border-bottom pb-2 mb-3" data-i18n="billing">${translations[currentLanguage]?.billing || 'Billing & Discharges'}</h6>
+            <ul class="list-group list-group-flush scrollable-list" style="max-height: 300px; overflow-y: auto;">
+                ${bills.map(b => `
+                    <li class="list-group-item px-0 bg-transparent">
+                        <div class="d-flex justify-content-between small fw-bold">
+                            <span>${new Date(b.createdAt).toLocaleDateString()}</span>
+                            <span class="text-primary">$${b.total}</span>
+                        </div>
+                        <div class="x-small text-muted" style="font-size: 10px;">
+                            ${translations[currentLanguage]?.room_charges || 'Room'}: $${b.roomCharges} | 
+                            ${translations[currentLanguage]?.medicine_costs || 'Med'}: $${b.medicineCosts} | 
+                            ${translations[currentLanguage]?.doctor_fees || 'Fees'}: $${b.doctorFees}
+                        </div>
+                        <button class="btn btn-xs btn-outline-info py-0 px-1 mt-1" style="font-size: 9px;" onclick="downloadPatientInvoice('${b.appointmentId}')"><i class="fas fa-file-pdf"></i> PDF</button>
+                    </li>
+                `).reverse().join('')}
+                ${bills.length === 0 ? `<li class="list-group-item px-0 bg-transparent text-muted small">${translations[currentLanguage]?.no_bills_yet || 'No records found.'}</li>` : ''}
+            </ul>
+        </div>
+    </div>`;
+
+    document.getElementById('patient-history-content').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('patientHistoryModal')).show();
+};
+
+window.deleteAppointment = async (id) => {
+    if (confirm(translations[currentLanguage]?.confirm_delete_appointment || 'Delete this appointment?')) {
+        try {
+            await update(ref(rtdb, 'appointments/' + id), { status: 'deleted' }); // Soft delete better for records
+            // Or use remove(ref(rtdb, 'appointments/' + id));
+        } catch (err) {
+            alert(err.message);
+        }
+    }
+};
 
 window.dischargeFromDoctor = async (appId, patientId) => {
     if (!confirm(translations[currentLanguage]?.confirm_discharge || 'Are you sure you want to end this session and discharge the patient?')) return;

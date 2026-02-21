@@ -206,34 +206,60 @@ document.getElementById('bookingForm')?.addEventListener('submit', async (e) => 
 });
 
 // ─── My Appointments & Bills ──────────────────────────────────────────────────
+function renderDoctorsTeam() {
+    const list = document.getElementById('doctors-team-list');
+    if (!list) return;
+
+    onValue(dbRef(rtdb, 'users'), (snap) => {
+        if (!snap.exists()) return;
+        const doctors = Object.values(snap.val()).filter(u => u.role === 'doctor').slice(0, 3);
+        list.innerHTML = doctors.map(d => `
+            <div class="col-md-4">
+                <div class="p-3 border rounded-3 text-center bg-light bg-opacity-10 h-100">
+                    <div class="avatar-circle mx-auto mb-2 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
+                        <i class="fas fa-user-md text-primary fs-4"></i>
+                    </div>
+                    <div class="fw-bold small text-truncate">${d.fullName}</div>
+                    <div class="text-muted" style="font-size: 11px;">${translations[currentLanguage]?.[d.specialization] || d.specialization}</div>
+                </div>
+            </div>
+        `).join('') || `<div class="col-12 text-muted small">${translations[currentLanguage]?.no_doctors || 'No doctors found.'}</div>`;
+    });
+}
+
 function initData() {
     const user = auth.currentUser;
     if (!user) return;
 
+    renderDoctorsTeam();
+
     onValue(dbRef(rtdb, 'appointments'), (snap) => {
         const tbody = document.getElementById('appointments-status-table');
         const nextDiv = document.getElementById('next-appointment');
+        if (!tbody) return;
         tbody.innerHTML = '';
         let next = null;
 
-        if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-3">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`; return; }
+        if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`; return; }
 
         const today = new Date().toISOString().split('T')[0];
-        Object.entries(snap.val()).forEach(([id, app]) => {
-            if (app.patientId !== user.uid) return;
+        const appointments = Object.entries(snap.val())
+            .filter(([id, app]) => app.patientId === user.uid && app.status !== 'deleted')
+            .sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
+
+        appointments.forEach(([id, app]) => {
             if (!next && app.status === 'approved' && app.date >= today) next = app;
 
             const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
-                ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-file"></i> ${i + 1}</a>`).join('')
-                : '—';
+                ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="File ${i + 1}"><i class="fas fa-file"></i></a>`).join('')
+                : '';
 
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${app.doctorName}</td>
-                <td>${app.date}</td>
-                <td>${app.time}</td>
-                <td><span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : app.status === 'pending' ? 'warning text-dark' : 'danger')}">${translations[currentLanguage]?.[app.status] || app.status}</span></td>
-                <td>${filesHTML}</td>`;
+                <td><div class="fw-bold mb-0">${app.doctorName}</div></td>
+                <td><small>${app.date} | ${app.time}</small></td>
+                <td><span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : (app.status === 'pending' ? 'warning text-dark' : 'danger'))}">${translations[currentLanguage]?.[app.status] || app.status}</span></td>
+                <td><div class="d-flex gap-1">${filesHTML}</div></td>`;
             tbody.appendChild(row);
         });
 
@@ -242,21 +268,41 @@ function initData() {
             : `<p class="text-muted mb-0">${translations[currentLanguage]?.no_appointments || 'No upcoming appointments'}</p>`;
     });
 
-    // Check if user is discharged and show a notice
+    // Check if user is discharged and show a detailed notice
     onValue(dbRef(rtdb, 'users/' + user.uid), (snap) => {
         const userData = snap.val();
         const noticeDiv = document.getElementById('session-ended-notice');
         if (userData?.discharged) {
-            if (noticeDiv) {
-                noticeDiv.classList.remove('d-none');
-                noticeDiv.innerHTML = `
-                    <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
-                        <h5 class="alert-heading fw-bold"><i class="fas fa-info-circle me-2"></i><span data-i18n="session_ended">${translations[currentLanguage]?.session_ended || 'Session Ended'}</span></h5>
-                        <p class="mb-0">${translations[currentLanguage]?.discharge_message || 'Your session has ended. You are free to go! Please check your bills below.'}</p>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="acknowledgeDischarge()"></button>
-                    </div>
-                `;
-            }
+            // Find the latest bill for this user to show details
+            get(dbRef(rtdb, 'bills')).then(billSnap => {
+                let latestBill = null;
+                if (billSnap.exists()) {
+                    latestBill = Object.values(billSnap.val())
+                        .filter(b => b.patientId === user.uid)
+                        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+                }
+
+                if (noticeDiv) {
+                    noticeDiv.classList.remove('d-none');
+                    let billDetails = latestBill ? `
+                        <div class="mt-2 small border-top pt-2 opacity-75">
+                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> $${latestBill.roomCharges}</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> $${latestBill.medicineCosts}</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> $${latestBill.doctorFees}</span>
+                            <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> $${latestBill.total}</span>
+                        </div>
+                    ` : '';
+
+                    noticeDiv.innerHTML = `
+                        <div class="alert alert-info alert-dismissible fade show mb-4 glass-card border-0 border-start border-4 border-info" role="alert">
+                            <h5 class="alert-heading fw-bold"><i class="fas fa-info-circle me-2"></i><span data-i18n="session_ended">${translations[currentLanguage]?.session_ended || 'Session Ended'}</span></h5>
+                            <p class="mb-0">${translations[currentLanguage]?.discharge_message || 'Your session has ended. You are free to go! Please check your bills below.'}</p>
+                            ${billDetails}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="acknowledgeDischarge()"></button>
+                        </div>
+                    `;
+                }
+            });
         } else if (noticeDiv) {
             noticeDiv.classList.add('d-none');
         }
@@ -264,15 +310,19 @@ function initData() {
 
     onValue(dbRef(rtdb, 'bills'), (snap) => {
         const tbody = document.getElementById('patient-bills-table');
+        if (!tbody) return;
         tbody.innerHTML = '';
         if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="3" class="text-muted text-center py-3">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr>`; return; }
 
-        Object.entries(snap.val()).forEach(([id, bill]) => {
-            if (bill.patientId !== user.uid) return;
+        const bills = Object.entries(snap.val())
+            .filter(([id, bill]) => bill.patientId === user.uid)
+            .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
+
+        bills.forEach(([id, bill]) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}</td>
-                <td class="fw-bold">$${bill.total}</td>
+                <td><small>${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}</small></td>
+                <td class="fw-bold text-primary">$${bill.total}</td>
                 <td><button class="btn btn-sm btn-outline-primary" onclick="downloadBill('${id}')"><i class="fas fa-download me-1"></i>PDF</button></td>`;
             tbody.appendChild(row);
         });
