@@ -652,7 +652,9 @@ const translations = {
         certificate_added_success: "تم تحميل الشهادة بنجاح!",
         no_doctors: "لم يتم العثور على أطباء.",
         book_now: "احجز الآن",
-        view_all: "عرض الكل"
+        view_all: "عرض الكل",
+        approve: "موافقة",
+        reject: "رفض"
     }
 };
 

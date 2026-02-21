@@ -318,12 +318,20 @@ function renderAllAppointments() {
             <td><span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger')} text-capitalize">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
             <td>
                 <div class="d-flex gap-1">
+                    ${a.status === 'pending' ? `
+                        <button class="btn btn-sm btn-success" onclick="updateAppointmentStatus('${id}', 'approved')" title="${translations[currentLanguage]?.approve || 'Approve'}">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="updateAppointmentStatus('${id}', 'rejected')" title="${translations[currentLanguage]?.reject || 'Reject'}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : ''}
                     ${a.status === 'approved' ? `
                         <button class="btn btn-sm btn-outline-danger" onclick="dischargePatient('${a.patientId}', '${id}')" title="${translations[currentLanguage]?.discharge_patient || 'Discharge'}">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
                     ` : ''}
-                    <button class="btn btn-sm btn-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
                 </div>
             </td>
         </tr>
@@ -331,7 +339,17 @@ function renderAllAppointments() {
 }
 
 window.deleteAppointment = async (id) => {
-    if (confirm(translations[currentLanguage]?.confirm_delete_appointment || 'Delete this appointment?')) await remove(ref(rtdb, 'appointments/' + id));
+    if (confirm(translations[currentLanguage]?.confirm_delete_appointment || "Delete this appointment?")) {
+        await remove(ref(rtdb, 'appointments/' + id));
+    }
+};
+
+window.updateAppointmentStatus = async (appId, status) => {
+    try {
+        await update(ref(rtdb, 'appointments/' + appId), { status });
+    } catch (error) {
+        alert((translations[currentLanguage]?.error_updating_appointment || "Error updating appointment: ") + error.message);
+    }
 };
 
 // ─── Departments ──────────────────────────────────────────────────────────────
@@ -352,22 +370,22 @@ function renderDepartments() {
         const countTxt = deptDoctors.length + ' ' + (deptDoctors.length === 1 ? (translations[currentLanguage]?.doctor_assigned || 'doctor') : (translations[currentLanguage]?.doctors_assigned || 'doctors'));
 
         return `
-        <div class="col-md-4">
-            <div class="glass-card p-4">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="rounded-circle bg-${dept.color} text-white d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
-                        <i class="${dept.icon}"></i>
-                    </div>
-                    <div>
-                        <h5 class="mb-0">${deptName}</h5>
-                        <small class="text-muted">${countTxt}</small>
-                    </div>
+        < div class= "col-md-4" >
+        <div class="glass-card p-4">
+            <div class="d-flex align-items-center mb-3">
+                <div class="rounded-circle bg-${dept.color} text-white d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">
+                    <i class="${dept.icon}"></i>
                 </div>
-                ${deptDoctors.length > 0
+                <div>
+                    <h5 class="mb-0">${deptName}</h5>
+                    <small class="text-muted">${countTxt}</small>
+                </div>
+            </div>
+            ${deptDoctors.length > 0
                 ? `<ul class="list-unstyled mb-0">${deptDoctors.map(d => `<li class="d-flex align-items-center gap-2 mb-2"><i class="fas fa-user-md text-${dept.color}"></i><span>${d.fullName}</span></li>`).join('')}</ul>`
                 : `<p class="text-muted small mb-0">${translations[currentLanguage]?.no_doctors_assigned || 'No doctors assigned yet.'}</p>`}
-            </div>
-        </div>`;
+        </div>
+        </div > `;
     }).join('');
 }
 
@@ -376,13 +394,13 @@ function renderBilling() {
     const tbody = document.getElementById('billing-table');
     const entries = Object.entries(allBills);
     if (entries.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr>`;
+        tbody.innerHTML = `< tr > <td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr > `;
         return;
     }
     tbody.innerHTML = entries.map(([id, b]) => {
         const patient = allUsers[b.patientId];
         return `
-        <tr>
+    < tr >
             <td><div class="fw-bold">${patient?.fullName || (translations[currentLanguage]?.unknown || 'Unknown')}</div><small class="text-muted">${patient?.email || ''}</small></td>
             <td>${b.roomCharges || 0} DA</td>
             <td>${b.medicineCosts || 0} DA</td>
@@ -392,7 +410,7 @@ function renderBilling() {
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="downloadAdminInvoice('${id}')"><i class="fas fa-download me-1"></i>PDF</button>
             </td>
-        </tr>`;
+        </tr > `;
     }).join('');
 }
 
