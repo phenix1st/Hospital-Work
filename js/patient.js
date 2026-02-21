@@ -4,7 +4,7 @@ import {
     ref as dbRef, onValue, push, get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import {
-    ref as storageRef, uploadBytesResumable, getDownloadURL
+    ref as storageRef, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
@@ -95,41 +95,35 @@ async function uploadFiles(files, folder) {
             console.log("Uploading file:", file.name, "to path:", path);
             const fileRef = storageRef(storage, path);
 
-            await new Promise((resolve, reject) => {
-                const task = uploadBytesResumable(fileRef, file);
+            // Using uploadBytes for simpler, more reliable uploads
+            // Including a safety timeout of 30 seconds
+            const uploadPromise = uploadBytes(fileRef, file);
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error("Upload timed out (30s)")), 30000)
+            );
 
-                task.on('state_changed',
-                    (snapshot) => {
-                        const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) : 0;
-                        const pct = Math.round(((i + progress) / files.length) * 100);
-                        console.log(`File ${i + 1} progress: ${Math.round(progress * 100)}% (Total: ${pct}%)`);
-                        if (progressBar) progressBar.style.width = pct + '%';
-                        if (uploadStatus) {
-                            const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
-                            uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
-                        }
-                    },
-                    (error) => {
-                        console.error("Firebase Storage Upload Error:", error);
-                        reject(error);
-                    },
-                    async () => {
-                        console.log("File uploaded successfully, getting download URL...");
-                        try {
-                            const url = await getDownloadURL(task.snapshot.ref);
-                            console.log("Got URL:", url);
-                            urls.push(url);
-                            resolve();
-                        } catch (err) {
-                            console.error("Error getting download URL:", err);
-                            reject(err);
-                        }
-                    }
-                );
-            });
+            if (uploadStatus) {
+                const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
+                uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
+            }
+
+            await Promise.race([uploadPromise, timeoutPromise]);
+            console.log("File uploaded successfully, getting download URL...");
+
+            const url = await getDownloadURL(fileRef);
+            console.log("Got URL:", url);
+            urls.push(url);
+
+            if (progressBar) {
+                const pct = Math.round(((i + 1) / files.length) * 100);
+                progressBar.style.width = pct + '%';
+            }
         }
     } catch (err) {
         console.error("Upload process aborted:", err);
+        // Alert the user specifically about upload failures
+        const errorLabel = translations[currentLanguage]?.upload_error || 'Upload failed: ';
+        alert(errorLabel + (err.message || err.code || "Unknown error"));
         throw err;
     } finally {
         if (progressDiv) progressDiv.classList.add('d-none');
