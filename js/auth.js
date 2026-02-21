@@ -11,7 +11,7 @@ import {
     get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-const ADMIN_EMAIL = "azizhospital@gmail.com";
+const ADMIN_EMAILS = ["azizhospital@gmail.com", "hospitalbiskra@gmail.com"];
 
 // Check User Role and Status
 onAuthStateChanged(auth, async (user) => {
@@ -23,7 +23,7 @@ onAuthStateChanged(auth, async (user) => {
 
             // Special Admin Check
             if (userData.role === 'admin') {
-                if (user.email !== ADMIN_EMAIL) {
+                if (!ADMIN_EMAILS.includes(user.email)) {
                     alert("Access Denied: Only the authorized hospital administrator can access this dashboard.");
                     logout();
                     return;
