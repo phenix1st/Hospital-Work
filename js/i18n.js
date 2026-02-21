@@ -193,7 +193,17 @@ const translations = {
         hospital_phone: "+213 555 123 456",
         hospital_email: "azizhospital@gmail.com",
         available_slots: "Available for appointments",
-        contact_success_alert: "Thank you! We will get back to you shortly."
+        contact_success_alert: "Thank you! We will get back to you shortly.",
+        session_certificates: "Session Certificates",
+        issue_certificate: "Issue Certificate",
+        certificate_upload_desc: "Upload a session certificate (PDF preferred)",
+        diagnosis_note: "Diagnosis/Session Note",
+        session_date: "Session Date",
+        upload_certificate: "Upload Certificate",
+        patient_certificates: "Medical Certificates",
+        download: "Download",
+        no_certificates: "No certificates available.",
+        certificate_added_success: "Certificate uploaded successfully!"
     },
     fr: {
         title: "Système de Gestion Hospitalière",
@@ -411,7 +421,17 @@ const translations = {
         subject: "Sujet",
         your_message: "Votre message...",
         loading: "Chargement...",
-        view_all_doctors: "Voir tous les docteurs"
+        view_all_doctors: "Voir tous les docteurs",
+        session_certificates: "Certificats de Session",
+        issue_certificate: "Émettre un Certificat",
+        certificate_upload_desc: "Téléchargez un certificat de session (PDF de préférence)",
+        diagnosis_note: "Note de Diagnostic/Session",
+        session_date: "Date de la Session",
+        upload_certificate: "Télécharger le Certificat",
+        patient_certificates: "Certificats Médicaux",
+        download: "Télécharger",
+        no_certificates: "Aucun certificat disponible.",
+        certificate_added_success: "Certificat téléchargé avec succès !"
     },
     ar: {
         welcome: "مرحباً بكم في نظام إدارة المستشفى",
@@ -613,7 +633,17 @@ const translations = {
         hospital_phone: "+213 555 123 456",
         hospital_email: "azizhospital@gmail.com",
         available_slots: "متاح للمواعيد",
-        contact_success_alert: "شكراً لك! سنتواصل معك قريباً."
+        contact_success_alert: "شكراً لك! سنتواصل معك قريباً.",
+        session_certificates: "شهادات الجلسة",
+        issue_certificate: "إصدار شهادة",
+        certificate_upload_desc: "تحميل شهادة الجلسة (يفضل PDF)",
+        diagnosis_note: "ملاحظة التشخيص/الجلسة",
+        session_date: "تاريخ الجلسة",
+        upload_certificate: "تحميل الشهادة",
+        patient_certificates: "الشهادات الطبية",
+        download: "تحميل",
+        no_certificates: "لا توجد شهادات متاحة.",
+        certificate_added_success: "تم تحميل الشهادة بنجاح!"
     }
 };
 

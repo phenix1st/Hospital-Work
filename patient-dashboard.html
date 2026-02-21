@@ -143,6 +143,9 @@
             <a class="nav-link" href="#" data-i18n="bills_invoices" onclick="showSection('section-bills')"><i
                     class="fas fa-file-invoice me-2"></i> Bills &
                 Invoices</a>
+            <a class="nav-link" href="#" data-i18n="patient_certificates"
+                onclick="showSection('section-certificates')"><i class="fas fa-file-medical me-2"></i> Medical
+                Certificates</a>
             <hr class="mx-3">
             <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn" data-i18n="logout"><i
                     class="fas fa-sign-out-alt me-2"></i> Logout</a>
@@ -235,6 +238,24 @@
                             </tr>
                         </thead>
                         <tbody id="patient-bills-table"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div id="section-certificates" class="dashboard-section d-none">
+            <div class="glass-card p-4">
+                <h5 class="mb-4" data-i18n="patient_certificates">Medical Certificates</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th data-i18n="doctor">Doctor</th>
+                                <th data-i18n="session_date">Session Date</th>
+                                <th data-i18n="diagnosis_note">Note</th>
+                                <th data-i18n="action">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-certificates-table"></tbody>
                     </table>
                 </div>
             </div>

@@ -16,15 +16,16 @@ document.getElementById('logoutBtn')?.addEventListener('click', logout);
 import { generateInvoice } from './pdf-generator.js';
 
 let currentUploadAppId = null;
-let allAppointments = {};
 let allUsers = {};
 let allBills = {};
+let allCertificates = {};
 
 // ─── Navigation & UI Toggling ────────────────────────────────────────────────
 window.showSection = (sectionId) => {
     document.getElementById('requests-section').classList.add('d-none');
     document.getElementById('patients-section').classList.add('d-none');
     document.getElementById('history-section').classList.add('d-none');
+    document.getElementById('certificates-section')?.classList.add('d-none');
     document.getElementById(sectionId).classList.remove('d-none');
 
     // Update active nav link
@@ -32,6 +33,9 @@ window.showSection = (sectionId) => {
     if (sectionId === 'requests-section') document.querySelector('[data-i18n="my_schedule"]')?.classList.add('active');
     if (sectionId === 'patients-section') document.querySelector('[data-i18n="my_patients"]')?.classList.add('active');
     if (sectionId === 'history-section') document.querySelector('[data-i18n="history"]')?.classList.add('active');
+    if (sectionId === 'certificates-section') document.querySelector('[data-i18n="session_certificates"]')?.classList.add('active');
+
+    if (sectionId === 'certificates-section') renderCertificatesList();
 };
 
 window.showHistorySection = () => {
@@ -56,6 +60,12 @@ function initDoctorDashboard() {
     onValue(ref(rtdb, 'bills'), (snap) => {
         allBills = snap.exists() ? snap.val() : {};
         if (Object.keys(allAppointments).length > 0) renderHistory();
+    });
+
+    // Load Certificates
+    onValue(ref(rtdb, 'certificates'), (snap) => {
+        allCertificates = snap.exists() ? snap.val() : {};
+        renderCertificatesList();
     });
 
     // Load Appointments for this Doctor
@@ -150,6 +160,16 @@ window.renderMyPatients = (query = '') => {
             }
         }
     });
+
+    const certPatientSelect = document.getElementById('certPatientSelect');
+    if (certPatientSelect) {
+        certPatientSelect.innerHTML = '<option value="">' + (translations[currentLanguage]?.patient || 'Select Patient') + '</option>';
+        patientMap.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.id; opt.textContent = p.fullName;
+            certPatientSelect.appendChild(opt);
+        });
+    }
 
     patientMap.forEach(p => {
         const row = document.createElement('tr');
@@ -382,6 +402,108 @@ window.updateAppStatus = async (appId, status) => {
         alert((translations[currentLanguage]?.error_updating_appointment || "Error updating appointment: ") + error.message);
     }
 };
+
+// ─── Certificates Management ────────────────────────────────────────────────
+window.renderCertificatesList = () => {
+    const user = auth.currentUser;
+    const tbody = document.getElementById('certificates-table-body');
+    if (!tbody || !user) return;
+    tbody.innerHTML = '';
+
+    const certs = Object.entries(allCertificates)
+        .filter(([id, c]) => c.doctorId === user.uid)
+        .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
+
+    if (certs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-4">${translations[currentLanguage]?.no_certificates || 'No certificates issued yet.'}</td></tr>`;
+        return;
+    }
+
+    certs.forEach(([id, c]) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><div class="fw-bold">${c.patientName}</div></td>
+            <td><small>${c.sessionDate}</small></td>
+            <td><div class="text-truncate" style="max-width: 200px;" title="${c.note}">${c.note || '—'}</div></td>
+            <td>
+                <a href="${c.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-external-link-alt me-1"></i> <span data-i18n="view_content">${translations[currentLanguage]?.view_content || 'View'}</span>
+                </a>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+document.getElementById('certFileInput')?.addEventListener('change', (e) => {
+    const nameDiv = document.getElementById('cert-file-name');
+    if (nameDiv && e.target.files[0]) {
+        nameDiv.textContent = e.target.files[0].name;
+    }
+});
+
+document.getElementById('certificateUploadForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const patientSelect = document.getElementById('certPatientSelect');
+    const sessionDate = document.getElementById('certSessionDate').value;
+    const note = document.getElementById('certDiagnosisNote').value;
+    const fileInput = document.getElementById('certFileInput');
+    const file = fileInput.files[0];
+
+    if (!patientSelect.value || !file) return;
+
+    const btn = document.getElementById('certUploadBtn');
+    btn.disabled = true;
+    btn.textContent = translations[currentLanguage]?.loading || 'Uploading...';
+
+    const progressBar = document.getElementById('cert-progress-bar');
+    const statusText = document.getElementById('cert-upload-status');
+    const progressDiv = document.getElementById('cert-upload-progress');
+
+    progressDiv.classList.remove('d-none');
+
+    try {
+        const path = `certificates/${patientSelect.value}/${Date.now()}_${file.name}`;
+        const fileRef = storageRef(storage, path);
+
+        const uploadPromise = uploadBytes(fileRef, file);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 30000));
+
+        statusText.textContent = translations[currentLanguage]?.uploading || 'Uploading...';
+        await Promise.race([uploadPromise, timeoutPromise]);
+
+        const url = await getDownloadURL(fileRef);
+
+        const certData = {
+            patientId: patientSelect.value,
+            patientName: patientSelect.options[patientSelect.selectedIndex].text,
+            doctorId: user.uid,
+            doctorName: allUsers[user.uid]?.fullName || user.email,
+            sessionDate,
+            note,
+            fileUrl: url,
+            filePath: path,
+            createdAt: new Date().toISOString()
+        };
+
+        await push(ref(rtdb, 'certificates'), certData);
+
+        alert(translations[currentLanguage]?.certificate_added_success || "Certificate uploaded successfully!");
+        bootstrap.Modal.getInstance(document.getElementById('certificateUploadModal')).hide();
+        document.getElementById('certificateUploadForm').reset();
+        document.getElementById('cert-file-name').textContent = '';
+    } catch (error) {
+        console.error("Certificate upload failed:", error);
+        alert((translations[currentLanguage]?.upload_error || "Upload failed: ") + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = translations[currentLanguage]?.upload_certificate || 'Upload Certificate';
+        progressDiv.classList.add('d-none');
+    }
+});
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {

@@ -19,7 +19,7 @@ window.showSection = (sectionId) => {
     // Update active class in sidebar
     document.querySelectorAll('.sidebar .nav-link').forEach(link => {
         link.classList.remove('active');
-        if (link.getAttribute('onclick')?.includes(sectionId)) {
+        if (link.getAttribute('onclick')?.includes(`'${sectionId}'`)) {
             link.classList.add('active');
         }
     });
@@ -345,6 +345,40 @@ function initData() {
                 <td><small>${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}</small></td>
                 <td class="fw-bold text-primary">$${bill.total}</td>
                 <td><button class="btn btn-sm btn-outline-primary" onclick="downloadBill('${id}')"><i class="fas fa-download me-1"></i>PDF</button></td>`;
+            tbody.appendChild(row);
+        });
+    });
+
+    onValue(dbRef(rtdb, 'certificates'), (snap) => {
+        const tbody = document.getElementById('patient-certificates-table');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!snap.exists()) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_certificates || 'No certificates available.'}</td></tr>`;
+            return;
+        }
+
+        const certs = Object.entries(snap.val())
+            .filter(([id, c]) => c.patientId === user.uid)
+            .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
+
+        if (certs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_certificates || 'No certificates available.'}</td></tr>`;
+            return;
+        }
+
+        certs.forEach(([id, c]) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><div class="fw-bold mb-0">${c.doctorName}</div></td>
+                <td><small>${c.sessionDate}</small></td>
+                <td><div class="small text-muted text-truncate" style="max-width: 250px;" title="${c.note}">${c.note || '—'}</div></td>
+                <td>
+                    <a href="${c.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-download me-1"></i> <span data-i18n="download">${translations[currentLanguage]?.download || 'Download'}</span>
+                    </a>
+                </td>`;
             tbody.appendChild(row);
         });
     });
