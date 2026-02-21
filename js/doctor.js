@@ -56,7 +56,11 @@ function initDoctorDashboard() {
                     ${app.status === 'pending' ? `
                         <button class="btn btn-sm btn-success me-1" onclick="updateAppStatus('${id}', 'approved')"><i class="fas fa-check"></i></button>
                         <button class="btn btn-sm btn-danger" onclick="updateAppStatus('${id}', 'rejected')"><i class="fas fa-times"></i></button>
-                    ` : `<span class="badge bg-${app.status === 'approved' ? 'success' : 'danger'}">${translations[currentLanguage]?.[app.status] || app.status}</span>`}
+                    ` : app.status === 'approved' ? `
+                        <button class="btn btn-sm btn-outline-danger" onclick="dischargeFromDoctor('${id}', '${app.patientId}')">
+                            <i class="fas fa-sign-out-alt me-1"></i> <span data-i18n="discharge_patient">${translations[currentLanguage]?.discharge_patient || 'Discharge'}</span>
+                        </button>
+                    ` : `<span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : 'danger')}">${translations[currentLanguage]?.[app.status] || app.status}</span>`}
                 </td>
             `;
             tableBody.appendChild(row);
@@ -64,8 +68,44 @@ function initDoctorDashboard() {
 
         document.getElementById('pending-appointments').innerText = pending;
         document.getElementById('today-load').innerText = today;
+
+        // Count discharged patients (completed status)
+        const dischargedCount = Object.values(snapshot.val()).filter(a => a.doctorId === user.uid && a.status === 'completed').length;
+        document.getElementById('discharged-count').innerText = dischargedCount;
     });
 }
+
+window.dischargeFromDoctor = async (appId, patientId) => {
+    if (!confirm(translations[currentLanguage]?.confirm_discharge || 'Are you sure you want to end this session and discharge the patient?')) return;
+
+    const room = parseFloat(prompt(translations[currentLanguage]?.enter_room_charges || 'Enter Room Charges:') || 0);
+    const medicine = parseFloat(prompt(translations[currentLanguage]?.enter_medicine_costs || 'Enter Medicine Costs:') || 0);
+    const doctor = parseFloat(prompt(translations[currentLanguage]?.enter_doctor_fees || 'Enter Doctor Fees:') || 0);
+    const total = room + medicine + doctor;
+
+    try {
+        const billData = {
+            patientId,
+            appointmentId: appId,
+            roomCharges: room,
+            medicineCosts: medicine,
+            doctorFees: doctor,
+            total,
+            createdAt: new Date().toISOString()
+        };
+
+        // 1. Create bill
+        await push(ref(rtdb, 'bills'), billData);
+        // 2. Mark appointment completed
+        await update(ref(rtdb, 'appointments/' + appId), { status: 'completed' });
+        // 3. Mark user discharged
+        await update(ref(rtdb, 'users/' + patientId), { discharged: true });
+
+        alert(translations[currentLanguage]?.discharge_success || 'Patient discharged and session ended!');
+    } catch (err) {
+        alert((translations[currentLanguage]?.error_label || 'Error: ') + err.message);
+    }
+};
 
 window.openDoctorUploadModal = (appId) => {
     currentUploadAppId = appId;

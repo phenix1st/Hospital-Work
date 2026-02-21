@@ -315,9 +315,16 @@ function renderAllAppointments() {
             ? a.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link"><i class="fas fa-file me-1"></i>${translations[currentLanguage]?.file || 'File'} ${i + 1}</a>`).join('')
             : '<span class="text-muted small">—</span>'}
             </td>
-            <td><span class="badge bg-${a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger'} text-capitalize">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
+            <td><span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger')} text-capitalize">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
             <td>
-                <button class="btn btn-sm btn-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
+                <div class="d-flex gap-1">
+                    ${a.status === 'approved' ? `
+                        <button class="btn btn-sm btn-outline-danger" onclick="dischargePatient('${a.patientId}', '${id}')" title="${translations[currentLanguage]?.discharge_patient || 'Discharge'}">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    ` : ''}
+                    <button class="btn btn-sm btn-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
+                </div>
             </td>
         </tr>
     `).join('');
@@ -396,18 +403,38 @@ window.downloadAdminInvoice = async (billId) => {
 };
 
 // ─── Discharge a Patient ──────────────────────────────────────────────────────
-window.dischargePatient = async (patientId) => {
+window.dischargePatient = async (patientId, appointmentId = null) => {
+    if (!confirm(translations[currentLanguage]?.confirm_discharge || 'Are you sure you want to end this session and discharge the patient?')) return;
+
     const room = parseFloat(prompt(translations[currentLanguage]?.enter_room_charges || 'Enter Room Charges:') || 0);
     const medicine = parseFloat(prompt(translations[currentLanguage]?.enter_medicine_costs || 'Enter Medicine Costs:') || 0);
     const doctor = parseFloat(prompt(translations[currentLanguage]?.enter_doctor_fees || 'Enter Doctor Fees:') || 0);
     const total = room + medicine + doctor;
+
     try {
-        const billData = { patientId, roomCharges: room, medicineCosts: medicine, doctorFees: doctor, total, createdAt: new Date().toISOString() };
+        const billData = {
+            patientId,
+            appointmentId,
+            roomCharges: room,
+            medicineCosts: medicine,
+            doctorFees: doctor,
+            total,
+            createdAt: new Date().toISOString()
+        };
+
         await push(ref(rtdb, 'bills'), billData);
         await update(ref(rtdb, 'users/' + patientId), { discharged: true });
-        await generateInvoice(allUsers[patientId] || {}, billData);
+
+        if (appointmentId) {
+            await update(ref(rtdb, 'appointments/' + appointmentId), { status: 'completed' });
+        }
+
+        const u = allUsers[patientId] || {};
+        await generateInvoice(u, billData);
         alert(translations[currentLanguage]?.discharge_success || 'Patient discharged and invoice generated!');
-    } catch (err) { alert((translations[currentLanguage]?.error_label || 'Error: ') + err.message); }
+    } catch (err) {
+        alert((translations[currentLanguage]?.error_label || 'Error: ') + err.message);
+    }
 };
 
 // ─── Init ─────────────────────────────────────────────────────────────────────

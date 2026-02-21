@@ -232,7 +232,7 @@ function initData() {
                 <td>${app.doctorName}</td>
                 <td>${app.date}</td>
                 <td>${app.time}</td>
-                <td><span class="badge bg-${app.status === 'approved' ? 'success' : app.status === 'pending' ? 'warning text-dark' : 'danger'}">${translations[currentLanguage]?.[app.status] || app.status}</span></td>
+                <td><span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : app.status === 'pending' ? 'warning text-dark' : 'danger')}">${translations[currentLanguage]?.[app.status] || app.status}</span></td>
                 <td>${filesHTML}</td>`;
             tbody.appendChild(row);
         });
@@ -240,6 +240,26 @@ function initData() {
         nextDiv.innerHTML = next
             ? `<div class="text-primary fw-bold">${next.date} at ${next.time}</div><small class="text-muted">Dr. ${next.doctorName}</small>`
             : `<p class="text-muted mb-0">${translations[currentLanguage]?.no_appointments || 'No upcoming appointments'}</p>`;
+    });
+
+    // Check if user is discharged and show a notice
+    onValue(dbRef(rtdb, 'users/' + user.uid), (snap) => {
+        const userData = snap.val();
+        const noticeDiv = document.getElementById('session-ended-notice');
+        if (userData?.discharged) {
+            if (noticeDiv) {
+                noticeDiv.classList.remove('d-none');
+                noticeDiv.innerHTML = `
+                    <div class="alert alert-info alert-dismissible fade show mb-4" role="alert">
+                        <h5 class="alert-heading fw-bold"><i class="fas fa-info-circle me-2"></i><span data-i18n="session_ended">${translations[currentLanguage]?.session_ended || 'Session Ended'}</span></h5>
+                        <p class="mb-0">${translations[currentLanguage]?.discharge_message || 'Your session has ended. You are free to go! Please check your bills below.'}</p>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" onclick="acknowledgeDischarge()"></button>
+                    </div>
+                `;
+            }
+        } else if (noticeDiv) {
+            noticeDiv.classList.add('d-none');
+        }
     });
 
     onValue(dbRef(rtdb, 'bills'), (snap) => {
@@ -258,6 +278,13 @@ function initData() {
         });
     });
 }
+
+window.acknowledgeDischarge = async () => {
+    const user = auth.currentUser;
+    if (user) {
+        await update(dbRef(rtdb, 'users/' + user.uid), { discharged: false });
+    }
+};
 
 window.downloadBill = async (billId) => {
     const { jsPDF } = window.jspdf;
