@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Patient Dashboard - HMS</title>
+    <title>Patient Dashboard - Clinique Online</title>
     <link id="bootstrap-link" rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -124,8 +124,8 @@
     <aside class="sidebar" id="sidebar">
         <div class="px-4 mb-5 d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="text-primary fw-bold mb-0"><i class="fas fa-hospital-user me-2"></i>HMS</h2>
-                <span class="text-muted small">Patient Portal</span>
+                <h2 class="text-primary fw-bold mb-0"><i class="fas fa-hospital-user me-2"></i>Clinique Online</h2>
+                <span class="text-muted small" data-i18n="patient_portal">Patient Portal</span>
             </div>
             <button class="btn d-lg-none p-0 text-muted" onclick="toggleSidebar()">
                 <i class="fas fa-times fs-4"></i>
@@ -159,8 +159,9 @@
                     <i class="fas fa-bars"></i>
                 </button>
                 <div>
-                    <h2 class="fw-bold mb-0" data-i18n="welcome">My Health</h2>
-                    <p class="text-muted mb-0" data-i18n="welcome_desc">Manage your appointments and medical records</p>
+                    <h2 class="fw-bold mb-0" data-i18n="welcome_health">My Health</h2>
+                    <p class="text-muted mb-0" data-i18n="welcome_health_desc">Manage your appointments and medical
+                        records</p>
                 </div>
             </div>
             <div class="d-flex gap-3">
@@ -195,7 +196,7 @@
                     <div class="glass-card p-4 h-100">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="mb-0" data-i18n="our_medical_team">Our Medical Team</h5>
-                            <button class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#bookingModal"
+                            <button class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#allDoctorsModal"
                                 data-i18n="view_all">View All</button>
                         </div>
                         <div id="doctors-team-list" class="row g-3">
@@ -261,6 +262,23 @@
             </div>
         </div>
     </main>
+
+    <!-- All Doctors Modal -->
+    <div class="modal fade" id="allDoctorsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content glass-card">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" data-i18n="our_medical_team">Our Medical Team</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="all-doctors-list" class="row g-4">
+                        <!-- Dynamic content -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Booking Modal -->
     <div class="modal fade" id="bookingModal" tabindex="-1">

@@ -19,6 +19,7 @@ let currentUploadAppId = null;
 let allUsers = {};
 let allBills = {};
 let allCertificates = {};
+let allAppointments = {};
 
 // ─── Navigation & UI Toggling ────────────────────────────────────────────────
 window.showSection = (sectionId) => {
@@ -53,6 +54,7 @@ function initDoctorDashboard() {
         if (Object.keys(allAppointments).length > 0) {
             renderMyPatients();
             renderHistory();
+            populateCertPatientSelect();
         }
     });
 
@@ -135,8 +137,35 @@ function initDoctorDashboard() {
 
         renderMyPatients();
         renderHistory();
+        populateCertPatientSelect();
     });
 }
+
+window.populateCertPatientSelect = () => {
+    const user = auth.currentUser;
+    const select = document.getElementById('certPatientSelect');
+    if (!select || !user) return;
+
+    const patientMap = new Map();
+    Object.values(allAppointments).forEach(app => {
+        if (app.doctorId === user.uid) {
+            const pId = app.patientId;
+            const pData = allUsers[pId] || { fullName: app.patientName };
+            if (pId && !patientMap.has(pId)) {
+                patientMap.set(pId, pData.fullName || app.patientName);
+            }
+        }
+    });
+
+    const currentVal = select.value;
+    select.innerHTML = '<option value="">' + (translations[currentLanguage]?.patient || 'Select Patient') + '</option>';
+    patientMap.forEach((name, id) => {
+        const opt = document.createElement('option');
+        opt.value = id; opt.textContent = name;
+        select.appendChild(opt);
+    });
+    if (currentVal) select.value = currentVal;
+};
 
 window.renderMyPatients = (query = '') => {
     const user = auth.currentUser;
@@ -160,16 +189,6 @@ window.renderMyPatients = (query = '') => {
             }
         }
     });
-
-    const certPatientSelect = document.getElementById('certPatientSelect');
-    if (certPatientSelect) {
-        certPatientSelect.innerHTML = '<option value="">' + (translations[currentLanguage]?.patient || 'Select Patient') + '</option>';
-        patientMap.forEach(p => {
-            const opt = document.createElement('option');
-            opt.value = p.id; opt.textContent = p.fullName;
-            certPatientSelect.appendChild(opt);
-        });
-    }
 
     patientMap.forEach(p => {
         const row = document.createElement('tr');

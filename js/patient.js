@@ -228,13 +228,16 @@ document.getElementById('bookingForm')?.addEventListener('submit', async (e) => 
 
 // ─── My Appointments & Bills ──────────────────────────────────────────────────
 function renderDoctorsTeam() {
-    const list = document.getElementById('doctors-team-list');
-    if (!list) return;
+    const previewList = document.getElementById('doctors-team-list');
+    const fullList = document.getElementById('all-doctors-list');
+    if (!previewList) return;
 
     onValue(dbRef(rtdb, 'users'), (snap) => {
         if (!snap.exists()) return;
-        const doctors = Object.values(snap.val()).filter(u => u.role === 'doctor').slice(0, 3);
-        list.innerHTML = doctors.map(d => `
+        const doctors = Object.values(snap.val()).filter(u => u.role === 'doctor' && u.status === 'approved');
+
+        // Render 3 for the dashboard preview
+        previewList.innerHTML = doctors.slice(0, 3).map(d => `
             <div class="col-md-4">
                 <div class="p-3 border rounded-3 text-center bg-light bg-opacity-10 h-100">
                     <div class="avatar-circle mx-auto mb-2 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
@@ -245,8 +248,46 @@ function renderDoctorsTeam() {
                 </div>
             </div>
         `).join('') || `<div class="col-12 text-muted small">${translations[currentLanguage]?.no_doctors || 'No doctors found.'}</div>`;
+
+        // Render all for the modal
+        if (fullList) {
+            fullList.innerHTML = doctors.map(d => `
+                <div class="col-md-6 col-lg-4">
+                    <div class="glass-card p-4 text-center h-100">
+                        <div class="avatar-circle mx-auto mb-3 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50%;">
+                            <i class="fas fa-user-md text-primary fs-3"></i>
+                        </div>
+                        <h6 class="fw-bold mb-1">${d.fullName}</h6>
+                        <p class="text-primary small mb-2">${translations[currentLanguage]?.[d.specialization] || d.specialization}</p>
+                        <hr class="my-3 opacity-25">
+                        <div class="d-flex justify-content-center gap-2">
+                             <span class="badge bg-light text-dark border"><i class="fas fa-phone-alt me-1 text-muted"></i> ${d.mobile || '—'}</span>
+                        </div>
+                        <p class="small text-muted mt-3 mb-0">${d.department ? (translations[currentLanguage]?.[d.department] || d.department) : ''}</p>
+                        <button class="btn btn-sm btn-outline-primary mt-3 w-100" data-bs-toggle="modal" data-bs-target="#bookingModal" onclick="preSelectDoctor('${d.department}', '${doctors.find(doc => doc.fullName === d.fullName) ? Object.keys(snap.val()).find(key => snap.val()[key].fullName === d.fullName) : ''}')">
+                            <i class="fas fa-calendar-check me-1"></i> <span data-i18n="book_now">${translations[currentLanguage]?.book_now || 'Book Now'}</span>
+                        </button>
+                    </div>
+                </div>
+            `).join('') || `<div class="col-12 text-muted text-center py-5">${translations[currentLanguage]?.no_doctors || 'No doctors found.'}</div>`;
+        }
     });
 }
+
+window.preSelectDoctor = (dept, docId) => {
+    // Basic helper to pre-fill the booking modal
+    const deptSel = document.getElementById('deptSelect');
+    const docSel = document.getElementById('doctorSelect');
+    if (deptSel) {
+        deptSel.value = dept;
+        // Trigger the change event to load doctors for this dept
+        deptSel.dispatchEvent(new Event('change'));
+        // Wait for doctors to load then select
+        setTimeout(() => {
+            if (docSel) docSel.value = docId;
+        }, 300);
+    }
+};
 
 function initData() {
     const user = auth.currentUser;

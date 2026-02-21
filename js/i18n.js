@@ -1,15 +1,15 @@
 const translations = {
     en: {
-        title: "Hospital Management System",
+        title: "Clinique Online",
         login: "Login",
         register: "Register",
-        welcome: "Welcome to HMS",
+        welcome: "Welcome to Clinique Online",
         admin_dashboard: "Admin Dashboard",
         doctor_dashboard: "Doctor Dashboard",
         patient_dashboard: "Patient Dashboard",
         pending_approval: "Your account is pending approval.",
         select_language: "Select Language",
-        footer_text: "© 2026 Hospital Management System",
+        footer_text: "© 2026 Clinique Online",
         dashboard: "Dashboard",
         manage_users: "Manage Users",
         appointments: "Appointments",
@@ -203,19 +203,22 @@ const translations = {
         patient_certificates: "Medical Certificates",
         download: "Download",
         no_certificates: "No certificates available.",
-        certificate_added_success: "Certificate uploaded successfully!"
+        certificate_added_success: "Certificate uploaded successfully!",
+        no_doctors: "No doctors found.",
+        book_now: "Book Now",
+        view_all: "View All"
     },
     fr: {
-        title: "Système de Gestion Hospitalière",
+        title: "Clinique Online",
         login: "Connexion",
         register: "S'inscrire",
-        welcome: "Bienvenue sur HMS",
+        welcome: "Bienvenue sur Clinique Online",
         admin_dashboard: "Tableau de Bord Admin",
         doctor_dashboard: "Tableau de Bord Docteur",
         patient_dashboard: "Tableau de Bord Patient",
         pending_approval: "Votre compte est en attente d'approbation.",
         select_language: "Choisir la langue",
-        footer_text: "© 2026 Système de Gestion Hospitalière",
+        footer_text: "© 2026 Clinique Online",
         dashboard: "Tableau de bord",
         manage_users: "Gérer les utilisateurs",
         appointments: "Rendez-vous",
@@ -431,10 +434,13 @@ const translations = {
         patient_certificates: "Certificats Médicaux",
         download: "Télécharger",
         no_certificates: "Aucun certificat disponible.",
-        certificate_added_success: "Certificat téléchargé avec succès !"
+        certificate_added_success: "Certificat téléchargé avec succès !",
+        no_doctors: "Aucun médecin trouvé.",
+        book_now: "Réserver maintenant",
+        view_all: "Voir tout"
     },
     ar: {
-        welcome: "مرحباً بكم في نظام إدارة المستشفى",
+        welcome: "مرحباً بكم في Clinique Online",
         welcome_desc: "صحتكم أولويتنا. احجز موعدك مع أفضل الأطباء اليوم.",
         book_now: "احجز الآن",
         view_doctors: "عرض الأطباء",
@@ -450,7 +456,7 @@ const translations = {
         email_placeholder: "بريدك الإلكتروني",
         message_placeholder: "رسالتك",
         send_message: "إرسال الرسالة",
-        footer_text: "&copy; 2026 نظام إدارة المستشفى. جميع الحقوق محفوظة.",
+        footer_text: "&copy; 2026 Clinique Online. جميع الحقوق محفوظة.",
         dashboard: "لوحة التحكم",
         doctors: "الأطباء",
         departments: "الأقسام",
@@ -643,7 +649,10 @@ const translations = {
         patient_certificates: "الشهادات الطبية",
         download: "تحميل",
         no_certificates: "لا توجد شهادات متاحة.",
-        certificate_added_success: "تم تحميل الشهادة بنجاح!"
+        certificate_added_success: "تم تحميل الشهادة بنجاح!",
+        no_doctors: "لم يتم العثور على أطباء.",
+        book_now: "احجز الآن",
+        view_all: "عرض الكل"
     }
 };
 
@@ -669,6 +678,13 @@ function updateContent() {
             } else {
                 element.innerText = translations[currentLanguage][key];
             }
+        }
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (translations[currentLanguage][key]) {
+            element.placeholder = translations[currentLanguage][key];
         }
     });
 
