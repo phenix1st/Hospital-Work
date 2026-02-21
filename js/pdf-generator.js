@@ -8,7 +8,7 @@ export async function generateInvoice(patientData, billData) {
 
     // Header
     doc.setFontSize(22);
-    doc.text("HMS - HOSPITAL INVOICE", 105, 20, { align: "center" });
+    doc.text("Clinique Online - HOSPITAL INVOICE", 105, 20, { align: "center" });
 
     doc.setFontSize(12);
     doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 40);
@@ -22,24 +22,24 @@ export async function generateInvoice(patientData, billData) {
     doc.line(20, 85, 190, 85);
 
     doc.text("Room Charges", 20, 95);
-    doc.text(`${billData.roomCharges}$`, 170, 95);
+    doc.text(`${billData.roomCharges} DA`, 170, 95);
 
     doc.text("Medicine Costs", 20, 105);
-    doc.text(`${billData.medicineCosts}$`, 170, 105);
+    doc.text(`${billData.medicineCosts} DA`, 170, 105);
 
     doc.text("Doctor Fees", 20, 115);
-    doc.text(`${billData.doctorFees}$`, 170, 115);
+    doc.text(`${billData.doctorFees} DA`, 170, 115);
 
     doc.line(20, 125, 190, 125);
     doc.setFontSize(14);
     doc.setTextColor(13, 110, 253); // text-primary
     doc.text("TOTAL COST", 20, 135);
-    doc.text(`${billData.total}$`, 170, 135);
+    doc.text(`${billData.total} DA`, 170, 135);
 
     // Footer
     doc.setTextColor(100);
     doc.setFontSize(10);
-    doc.text("Thank you for choosing HMS. Get well soon!", 105, 160, { align: "center" });
+    doc.text("Thank you for choosing Clinique Online. Get well soon!", 105, 160, { align: "center" });
 
     // Save PDF
     doc.save(`invoice_${patientData.fullName.replace(/\s+/g, '_')}.pdf`);

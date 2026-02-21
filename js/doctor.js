@@ -224,7 +224,7 @@ window.renderHistory = () => {
             <td>${a.date}</td>
             <td><small>${a.description || ''}</small></td>
             <td>
-                ${bill ? `<button class="btn btn-sm btn-link" onclick="downloadPatientInvoice('${id}')"><i class="fas fa-file-pdf me-1"></i>$${bill.total}</button>` : '—'}
+                ${bill ? `<button class="btn btn-sm btn-link" onclick="downloadPatientInvoice('${id}')"><i class="fas fa-file-pdf me-1"></i>${bill.total} DA</button>` : '—'}
             </td>
             <td><span class="badge bg-${a.status === 'completed' ? 'info' : 'secondary'}">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
         `;

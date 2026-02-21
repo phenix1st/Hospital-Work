@@ -348,10 +348,10 @@ function initData() {
                     noticeDiv.classList.remove('d-none');
                     let billDetails = latestBill ? `
                         <div class="mt-2 small border-top pt-2 opacity-75">
-                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> $${latestBill.roomCharges}</span>
-                            <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> $${latestBill.medicineCosts}</span>
-                            <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> $${latestBill.doctorFees}</span>
-                            <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> $${latestBill.total}</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> ${latestBill.roomCharges} DA</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> ${latestBill.medicineCosts} DA</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> ${latestBill.doctorFees} DA</span>
+                            <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> ${latestBill.total} DA</span>
                         </div>
                     ` : '';
 
@@ -384,7 +384,7 @@ function initData() {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><small>${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}</small></td>
-                <td class="fw-bold text-primary">$${bill.total}</td>
+                <td class="fw-bold text-primary">${bill.total} DA</td>
                 <td><button class="btn btn-sm btn-outline-primary" onclick="downloadBill('${id}')"><i class="fas fa-download me-1"></i>PDF</button></td>`;
             tbody.appendChild(row);
         });
@@ -440,14 +440,14 @@ window.downloadBill = async (billId) => {
     const patient = userSnap.val() || {};
 
     const doc = new jsPDF();
-    doc.setFontSize(20); doc.text('Hospital Invoice', 14, 20);
+    doc.setFontSize(20); doc.text('Clinique Online Invoice', 14, 20);
     doc.setFontSize(12);
     doc.text(`Patient: ${patient.fullName || '—'}`, 14, 40);
     doc.text(`Date: ${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}`, 14, 50);
-    doc.text(`Room Charges: $${bill.roomCharges || 0}`, 14, 70);
-    doc.text(`Medicine Costs: $${bill.medicineCosts || 0}`, 14, 80);
-    doc.text(`Doctor Fees: $${bill.doctorFees || 0}`, 14, 90);
-    doc.setFontSize(14); doc.text(`Total: $${bill.total || 0}`, 14, 105);
+    doc.text(`Room Charges: ${bill.roomCharges || 0} DA`, 14, 70);
+    doc.text(`Medicine Costs: ${bill.medicineCosts || 0} DA`, 14, 80);
+    doc.text(`Doctor Fees: ${bill.doctorFees || 0} DA`, 14, 90);
+    doc.setFontSize(14); doc.text(`Total: ${bill.total || 0} DA`, 14, 105);
     doc.save(`invoice-${billId}.pdf`);
 };
 

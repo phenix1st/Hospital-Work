@@ -384,10 +384,10 @@ function renderBilling() {
         return `
         <tr>
             <td><div class="fw-bold">${patient?.fullName || (translations[currentLanguage]?.unknown || 'Unknown')}</div><small class="text-muted">${patient?.email || ''}</small></td>
-            <td>$${b.roomCharges || 0}</td>
-            <td>$${b.medicineCosts || 0}</td>
-            <td>$${b.doctorFees || 0}</td>
-            <td class="fw-bold text-primary">$${b.total || 0}</td>
+            <td>${b.roomCharges || 0} DA</td>
+            <td>${b.medicineCosts || 0} DA</td>
+            <td>${b.doctorFees || 0} DA</td>
+            <td class="fw-bold text-primary">${b.total || 0} DA</td>
             <td>${b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '—'}</td>
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="downloadAdminInvoice('${id}')"><i class="fas fa-download me-1"></i>PDF</button>
