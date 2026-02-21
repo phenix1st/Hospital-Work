@@ -85,7 +85,7 @@ async function uploadFiles(files, folder) {
     const uploadStatus = document.getElementById('upload-status');
     const progressDiv = document.getElementById('upload-progress');
 
-    progressDiv?.classList.remove('d-none');
+    if (progressDiv) progressDiv.classList.remove('d-none');
 
     for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -96,15 +96,27 @@ async function uploadFiles(files, folder) {
             const task = uploadBytesResumable(fileRef, file);
             task.on('state_changed',
                 (snapshot) => {
-                    const pct = Math.round((i / files.length) * 100 + (snapshot.bytesTransferred / snapshot.totalBytes) * (100 / files.length));
+                    const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) : 0;
+                    const pct = Math.round(((i + progress) / files.length) * 100);
                     if (progressBar) progressBar.style.width = pct + '%';
-                    if (uploadStatus) uploadStatus.textContent = `Uploading file ${i + 1} of ${files.length}...`;
+                    if (uploadStatus) {
+                        const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
+                        uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
+                    }
                 },
-                reject,
+                (error) => {
+                    console.error("Upload failed:", error);
+                    reject(error);
+                },
                 async () => {
-                    const url = await getDownloadURL(task.snapshot.ref);
-                    urls.push(url);
-                    resolve();
+                    try {
+                        const url = await getDownloadURL(task.snapshot.ref);
+                        urls.push(url);
+                        resolve();
+                    } catch (err) {
+                        console.error("Error getting download URL:", err);
+                        reject(err);
+                    }
                 }
             );
         });
