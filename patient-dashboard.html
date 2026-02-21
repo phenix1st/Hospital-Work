@@ -132,15 +132,15 @@
             </button>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link active" href="#" data-i18n="dashboard" onclick="closeSidebarOnMobile()"><i
+            <a class="nav-link active" href="#" data-i18n="dashboard" onclick="showSection('section-dashboard')"><i
                     class="fas fa-home me-2"></i> Dashboard</a>
             <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#bookingModal"
                 data-i18n="book_appointment" onclick="closeSidebarOnMobile()"><i class="fas fa-calendar-plus me-2"></i>
                 Book Appointment</a>
-            <a class="nav-link" href="#" data-i18n="my_appointments" onclick="closeSidebarOnMobile()"><i
+            <a class="nav-link" href="#" data-i18n="my_appointments" onclick="showSection('section-appointments')"><i
                     class="fas fa-history me-2"></i> My
                 Appointments</a>
-            <a class="nav-link" href="#" data-i18n="bills_invoices" onclick="closeSidebarOnMobile()"><i
+            <a class="nav-link" href="#" data-i18n="bills_invoices" onclick="showSection('section-bills')"><i
                     class="fas fa-file-invoice me-2"></i> Bills &
                 Invoices</a>
             <hr class="mx-3">
@@ -178,63 +178,64 @@
 
         <div id="session-ended-notice" class="d-none"></div>
 
-        <div class="row g-4 mb-5">
-            <div class="col-lg-4">
-                <div class="glass-card p-4 h-100">
-                    <h5 class="mb-4" data-i18n="upcoming_appointment">Upcoming Appointment</h5>
-                    <div id="next-appointment">
-                        <p class="text-muted" data-i18n="no_appointments">No upcoming appointments</p>
+        <div id="section-dashboard" class="dashboard-section">
+            <div class="row g-4 mb-5">
+                <div class="col-lg-4">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="mb-4" data-i18n="upcoming_appointment">Upcoming Appointment</h5>
+                        <div id="next-appointment">
+                            <p class="text-muted" data-i18n="no_appointments">No upcoming appointments</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-lg-8">
-                <div class="glass-card p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0" data-i18n="our_medical_team">Our Medical Team</h5>
-                        <button class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#bookingModal"
-                            data-i18n="view_all">View All</button>
-                    </div>
-                    <div id="doctors-team-list" class="row g-3">
-                        <!-- Dynamic content -->
+                <div class="col-lg-8">
+                    <div class="glass-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0" data-i18n="our_medical_team">Our Medical Team</h5>
+                            <button class="btn btn-sm btn-link" data-bs-toggle="modal" data-bs-target="#bookingModal"
+                                data-i18n="view_all">View All</button>
+                        </div>
+                        <div id="doctors-team-list" class="row g-3">
+                            <!-- Dynamic content -->
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4 mb-5">
-            <div class="col-md-7">
-                <div class="glass-card p-4">
-                    <h5 class="mb-4" data-i18n="my_appointments">My Appointments</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="doctor">Doctor</th>
-                                    <th data-i18n="date_time">Date & Time</th>
-                                    <th data-i18n="status">Status</th>
-                                    <th data-i18n="action">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="appointments-status-table"></tbody>
-                        </table>
-                    </div>
+        <div id="section-appointments" class="dashboard-section d-none">
+            <div class="glass-card p-4 mb-4">
+                <h5 class="mb-4" data-i18n="my_appointments">My Appointments</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th data-i18n="doctor">Doctor</th>
+                                <th data-i18n="date_time">Date & Time</th>
+                                <th data-i18n="status">Status</th>
+                                <th data-i18n="action">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointments-status-table"></tbody>
+                    </table>
                 </div>
             </div>
-            <div class="col-md-5">
-                <div class="glass-card p-4">
-                    <h5 class="mb-4" data-i18n="bills_invoices">Bills & Invoices</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead>
-                                <tr>
-                                    <th data-i18n="date">Date</th>
-                                    <th data-i18n="total">Total</th>
-                                    <th data-i18n="action">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="patient-bills-table"></tbody>
-                        </table>
-                    </div>
+        </div>
+
+        <div id="section-bills" class="dashboard-section d-none">
+            <div class="glass-card p-4">
+                <h5 class="mb-4" data-i18n="bills_invoices">Bills & Invoices</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th data-i18n="date">Date</th>
+                                <th data-i18n="total">Total</th>
+                                <th data-i18n="action">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-bills-table"></tbody>
+                    </table>
                 </div>
             </div>
         </div>

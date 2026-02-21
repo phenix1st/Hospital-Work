@@ -9,6 +9,27 @@ import {
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
+window.showSection = (sectionId) => {
+    // Hide all sections
+    document.querySelectorAll('.dashboard-section').forEach(sec => sec.classList.add('d-none'));
+    // Show target section
+    const target = document.getElementById(sectionId);
+    if (target) target.classList.remove('d-none');
+
+    // Update active class in sidebar
+    document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('onclick')?.includes(sectionId)) {
+            link.classList.add('active');
+        }
+    });
+
+    if (window.innerWidth < 992) {
+        // Close sidebar on mobile (assumes toggleSidebar is available globally)
+        if (typeof toggleSidebar === 'function') toggleSidebar();
+    }
+};
+
 // ─── Time Slots ───────────────────────────────────────────────────────────────
 const ALL_TIME_SLOTS = [
     "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
