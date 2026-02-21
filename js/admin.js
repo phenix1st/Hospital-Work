@@ -259,15 +259,21 @@ window.viewUserContent = (uid) => {
     if (appointments.length === 0) {
         html += `<p class="text-muted small">${translations[currentLanguage]?.no_appointments || 'No appointments'}</p>`;
     } else {
-        html += `<ul class="list-group list-group-flush mb-3">` + appointments.map(a => `
+        html += `<ul class="list-group list-group-flush mb-3">` + appointments.map(a => {
+            const filesHTML = (a.medicalFiles && a.medicalFiles.length > 0)
+                ? `<div class="mt-1">` + a.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-xs btn-outline-info me-1 py-0 px-1" style="font-size: 10px;"><i class="fas fa-file"></i> ${i + 1}</a>`).join('') + `</div>`
+                : '';
+
+            return `
             <li class="list-group-item px-0 bg-transparent">
                 <div class="d-flex justify-content-between">
                     <span>${a.date} ${a.time}</span>
                     <span class="badge bg-${a.status === 'approved' ? 'success' : 'warning text-dark'}">${a.status}</span>
                 </div>
-                <small class="text-muted">${a.description || ''}</small>
-            </li>
-        `).join('') + `</ul>`;
+                <div class="text-muted small">${a.description || ''}</div>
+                ${filesHTML}
+            </li>`;
+        }).join('') + `</ul>`;
     }
 
     if (u.role === 'patient') {

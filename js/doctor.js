@@ -29,11 +29,16 @@ function initDoctorDashboard() {
             if (app.status === 'pending') pending++;
             if (app.date === todayStr) today++;
 
+            const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
+                ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-file"></i> ${i + 1}</a>`).join('')
+                : '<span class="text-muted small">—</span>';
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${app.patientName}</td>
                 <td>${app.date} | ${app.time}</td>
                 <td><small>${app.description || (translations[currentLanguage]?.not_available || 'N/A')}</small></td>
+                <td>${filesHTML}</td>
                 <td>
                     ${app.status === 'pending' ? `
                         <button class="btn btn-sm btn-success me-1" onclick="updateAppStatus('${id}', 'approved')"><i class="fas fa-check"></i></button>

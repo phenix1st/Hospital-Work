@@ -80,6 +80,7 @@ document.getElementById('deptSelect')?.addEventListener('change', async (e) => {
 
 // ─── Upload Files to Firebase Storage ────────────────────────────────────────
 async function uploadFiles(files, folder) {
+    console.log("Starting upload for", files.length, "files to", folder);
     const urls = [];
     const progressBar = document.getElementById('progress-bar');
     const uploadStatus = document.getElementById('upload-status');
@@ -87,42 +88,54 @@ async function uploadFiles(files, folder) {
 
     if (progressDiv) progressDiv.classList.remove('d-none');
 
-    for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const path = `${folder}/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, path);
+    try {
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            const path = `${folder}/${Date.now()}_${file.name}`;
+            console.log("Uploading file:", file.name, "to path:", path);
+            const fileRef = storageRef(storage, path);
 
-        await new Promise((resolve, reject) => {
-            const task = uploadBytesResumable(fileRef, file);
-            task.on('state_changed',
-                (snapshot) => {
-                    const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) : 0;
-                    const pct = Math.round(((i + progress) / files.length) * 100);
-                    if (progressBar) progressBar.style.width = pct + '%';
-                    if (uploadStatus) {
-                        const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
-                        uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
+            await new Promise((resolve, reject) => {
+                const task = uploadBytesResumable(fileRef, file);
+
+                task.on('state_changed',
+                    (snapshot) => {
+                        const progress = snapshot.totalBytes > 0 ? (snapshot.bytesTransferred / snapshot.totalBytes) : 0;
+                        const pct = Math.round(((i + progress) / files.length) * 100);
+                        console.log(`File ${i + 1} progress: ${Math.round(progress * 100)}% (Total: ${pct}%)`);
+                        if (progressBar) progressBar.style.width = pct + '%';
+                        if (uploadStatus) {
+                            const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
+                            uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
+                        }
+                    },
+                    (error) => {
+                        console.error("Firebase Storage Upload Error:", error);
+                        reject(error);
+                    },
+                    async () => {
+                        console.log("File uploaded successfully, getting download URL...");
+                        try {
+                            const url = await getDownloadURL(task.snapshot.ref);
+                            console.log("Got URL:", url);
+                            urls.push(url);
+                            resolve();
+                        } catch (err) {
+                            console.error("Error getting download URL:", err);
+                            reject(err);
+                        }
                     }
-                },
-                (error) => {
-                    console.error("Upload failed:", error);
-                    reject(error);
-                },
-                async () => {
-                    try {
-                        const url = await getDownloadURL(task.snapshot.ref);
-                        urls.push(url);
-                        resolve();
-                    } catch (err) {
-                        console.error("Error getting download URL:", err);
-                        reject(err);
-                    }
-                }
-            );
-        });
+                );
+            });
+        }
+    } catch (err) {
+        console.error("Upload process aborted:", err);
+        throw err;
+    } finally {
+        if (progressDiv) progressDiv.classList.add('d-none');
     }
 
-    if (progressDiv) progressDiv.classList.add('d-none');
+    console.log("Upload complete. URLs:", urls);
     return urls;
 }
 
