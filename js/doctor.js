@@ -224,7 +224,7 @@ window.renderHistory = () => {
             <td>${a.date}</td>
             <td><small>${a.description || ''}</small></td>
             <td>
-                ${bill ? `<button class="btn btn-sm btn-link" onclick="downloadPatientInvoice('${id}')"><i class="fas fa-file-pdf me-1"></i>${bill.total} DA</button>` : '—'}
+                ${bill ? `<button class="btn btn-sm btn-link" onclick="downloadPatientInvoice('${id}')"><i class="fas fa-file-pdf me-1"></i>${bill.total} ${translations[currentLanguage]?.currency || 'DA'}</button>` : '—'}
             </td>
             <td><span class="badge bg-${a.status === 'completed' ? 'info' : 'secondary'}">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
         `;
@@ -272,7 +272,7 @@ window.viewPatientHistory = (pId) => {
                     <li class="list-group-item px-0 bg-transparent">
                         <div class="d-flex justify-content-between small fw-bold">
                             <span>${new Date(b.createdAt).toLocaleDateString()}</span>
-                            <span class="text-primary">${b.total} DA</span>
+                            <span class="text-primary">${b.total} ${translations[currentLanguage]?.currency || 'DA'}</span>
                         </div>
                         <button class="btn btn-xs btn-outline-info py-0 px-1 mt-1" style="font-size: 9px;" onclick="downloadPatientInvoice('${b.appointmentId}')"><i class="fas fa-file-pdf"></i> PDF</button>
                     </li>

@@ -216,7 +216,8 @@ const translations = {
         generating_pdf: "Generating PDF...",
         certificate_header: "MEDICAL CERTIFICATE",
         saving_data: "Saving data...",
-        sync_specialists: "Sync Specialists"
+        sync_specialists: "Sync Specialists",
+        currency: "DA"
     },
     fr: {
         title: "Clinique Online",
@@ -458,7 +459,8 @@ const translations = {
         generating_pdf: "Génération du PDF...",
         certificate_header: "CERTIFICAT MÉDICAL",
         saving_data: "Enregistrement des données...",
-        sync_specialists: "Synchroniser les spécialistes"
+        sync_specialists: "Synchroniser les spécialistes",
+        currency: "DA"
     },
     ar: {
         title: "عيادة عن بعد",
@@ -686,6 +688,7 @@ const translations = {
         certificate_header: "شهادة طبية",
         saving_data: "جاري حفظ البيانات...",
         sync_specialists: "مزامنة الأطباء",
+        currency: "دج",
         approve: "موافقة",
         reject: "رفض"
     }

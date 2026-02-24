@@ -26,19 +26,19 @@ export async function generateInvoice(patientData, billData) {
     doc.line(20, 85, 190, 85);
 
     doc.text("Room Charges", 20, 95);
-    doc.text(`${billData.roomCharges} DA`, 170, 95);
+    doc.text(`${billData.roomCharges} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 95);
 
     doc.text("Medicine Costs", 20, 105);
-    doc.text(`${billData.medicineCosts} DA`, 170, 105);
+    doc.text(`${billData.medicineCosts} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 105);
 
     doc.text("Doctor Fees", 20, 115);
-    doc.text(`${billData.doctorFees} DA`, 170, 115);
+    doc.text(`${billData.doctorFees} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 115);
 
     doc.line(20, 125, 190, 125);
     doc.setFontSize(14);
     doc.setTextColor(13, 110, 253); // text-primary
     doc.text("TOTAL COST", 20, 135);
-    doc.text(`${billData.total} DA`, 170, 135);
+    doc.text(`${billData.total} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 135);
 
     // Footer
     doc.setTextColor(100);

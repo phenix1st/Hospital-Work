@@ -348,10 +348,10 @@ function initData() {
                     noticeDiv.classList.remove('d-none');
                     let billDetails = latestBill ? `
                         <div class="mt-2 small border-top pt-2 opacity-75">
-                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> ${latestBill.roomCharges} DA</span>
-                            <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> ${latestBill.medicineCosts} DA</span>
-                            <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> ${latestBill.doctorFees} DA</span>
-                            <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> ${latestBill.total} DA</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> ${latestBill.roomCharges} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> ${latestBill.medicineCosts} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                            <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> ${latestBill.doctorFees} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                            <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> ${latestBill.total} ${translations[currentLanguage]?.currency || 'DA'}</span>
                         </div>
                     ` : '';
 
@@ -386,7 +386,7 @@ function initData() {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><small>${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}</small></td>
-                <td class="fw-bold text-primary">${bill.total} DA</td>
+                <td class="fw-bold text-primary">${bill.total} ${translations[currentLanguage]?.currency || 'DA'}</td>
                 <td><button class="btn btn-sm btn-outline-primary" onclick="downloadBill('${id}')"><i class="fas fa-download me-1"></i>PDF</button></td>`;
             tbody.appendChild(row);
         });
