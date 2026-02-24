@@ -2,7 +2,7 @@ import { rtdb, auth, firebaseConfig } from './firebase-config.js';
 import { logout } from './auth.js';
 import { generateInvoice } from './pdf-generator.js';
 import {
-    ref, onValue, update, remove, push, get
+    ref, onValue, update, remove, push, get, set
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
@@ -28,6 +28,25 @@ function initListeners() {
         renderPendingUsers();
         renderUsers();
         renderDepartments();
+
+        // Auto-sync approved doctors to public node if admin is viewing
+        const approvedDoctors = Object.entries(allUsers).filter(([, u]) => u.role === 'doctor' && u.status === 'approved');
+        if (approvedDoctors.length > 0) {
+            console.log(`[Sync] Found ${approvedDoctors.length} approved doctors. Updating public node...`);
+            const publicUpdates = {};
+            approvedDoctors.forEach(([uid, u]) => {
+                publicUpdates['public/doctors/' + uid] = {
+                    fullName: u.fullName || u.name || '—',
+                    department: u.department || u.specialization || '—',
+                    mobile: u.mobile || '',
+                    certificateURL: u.certificateURL || '',
+                    updatedAt: new Date().toISOString()
+                };
+            });
+            update(ref(rtdb), publicUpdates).catch(err => console.error("[Sync] Auto-sync failed:", err));
+        } else {
+            console.log("[Sync] No approved doctors found to sync.");
+        }
     });
 
     // Appointments
@@ -143,8 +162,69 @@ window.renderUsers = () => {
     `).join('');
 };
 
+window.syncPublicDoctor = async (uid) => {
+    const u = allUsers[uid];
+    if (u && u.role === 'doctor' && u.status === 'approved') {
+        await set(ref(rtdb, 'public/doctors/' + uid), {
+            fullName: u.fullName || u.name || '—',
+            department: u.department || u.specialization || '—',
+            mobile: u.mobile || '',
+            certificateURL: u.certificateURL || '',
+            updatedAt: new Date().toISOString()
+        });
+    } else {
+        await remove(ref(rtdb, 'public/doctors/' + uid));
+    }
+};
+
+window.syncAllPublicDoctors = async () => {
+    const btn = event?.target?.closest('button');
+    if (btn) btn.disabled = true;
+
+    try {
+        const approved = Object.entries(allUsers).filter(([, u]) => u.role === 'doctor' && u.status === 'approved');
+        if (approved.length === 0) {
+            alert("No approved doctors found to sync.");
+            return;
+        }
+
+        const updates = {};
+        approved.forEach(([uid, u]) => {
+            updates['public/doctors/' + uid] = {
+                fullName: u.fullName || u.name || '—',
+                department: u.department || u.specialization || '—',
+                mobile: u.mobile || '',
+                certificateURL: u.certificateURL || '',
+                updatedAt: new Date().toISOString()
+            };
+        });
+
+        await update(ref(rtdb), updates);
+        alert(`Successfully synced ${approved.length} doctors to public specialists list!`);
+    } catch (err) {
+        console.error("Manual sync failed:", err);
+        alert("Sync failed: " + err.message);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+};
+
 window.approveUser = async (uid) => {
-    await update(ref(rtdb, 'users/' + uid), { status: 'approved', discharged: false });
+    try {
+        await update(ref(rtdb, 'users/' + uid), { status: 'approved', discharged: false });
+        // After approval, sync to public node if doctor
+        const snap = await get(ref(rtdb, 'users/' + uid));
+        const u = snap.val();
+        if (u.role === 'doctor') {
+            await set(ref(rtdb, 'public/doctors/' + uid), {
+                fullName: u.fullName || u.name || '—',
+                department: u.department || u.specialization || '—',
+                mobile: u.mobile || '',
+                certificateURL: u.certificateURL || '',
+                updatedAt: new Date().toISOString()
+            });
+        }
+    } catch (err) { console.error("Error approving user:", err); }
 };
 
 window.rejectUser = async (uid) => {
@@ -154,6 +234,7 @@ window.rejectUser = async (uid) => {
 window.deleteUser = async (uid) => {
     if (confirm(translations[currentLanguage]?.confirm_delete_user || 'Permanently delete this user? This cannot be undone.')) {
         await remove(ref(rtdb, 'users/' + uid));
+        await remove(ref(rtdb, 'public/doctors/' + uid));
     }
 };
 

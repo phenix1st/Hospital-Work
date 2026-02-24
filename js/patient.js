@@ -243,8 +243,8 @@ function renderDoctorsTeam() {
                     <div class="avatar-circle mx-auto mb-2 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
                         <i class="fas fa-user-md text-primary fs-4"></i>
                     </div>
-                    <div class="fw-bold small text-truncate">${d.fullName}</div>
-                    <div class="text-muted" style="font-size: 11px;">${translations[currentLanguage]?.[d.specialization] || d.specialization}</div>
+                    <div class="fw-bold small text-truncate">${d.fullName || d.name || '—'}</div>
+                    <div class="text-muted" style="font-size: 11px;">${translations[currentLanguage]?.[d.specialization || d.department] || d.specialization || d.department || '—'}</div>
                 </div>
             </div>
         `).join('') || `<div class="col-12 text-muted small">${translations[currentLanguage]?.no_doctors || 'No doctors found.'}</div>`;
@@ -257,8 +257,8 @@ function renderDoctorsTeam() {
                         <div class="avatar-circle mx-auto mb-3 bg-primary bg-opacity-25 d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; border-radius: 50%;">
                             <i class="fas fa-user-md text-primary fs-3"></i>
                         </div>
-                        <h6 class="fw-bold mb-1">${d.fullName}</h6>
-                        <p class="text-primary small mb-2">${translations[currentLanguage]?.[d.specialization] || d.specialization}</p>
+                        <h6 class="fw-bold mb-1">${d.fullName || d.name || '—'}</h6>
+                        <p class="text-primary small mb-2">${translations[currentLanguage]?.[d.specialization || d.department] || d.specialization || d.department || '—'}</p>
                         <hr class="my-3 opacity-25">
                         <div class="d-flex justify-content-center gap-2">
                              <span class="badge bg-light text-dark border"><i class="fas fa-phone-alt me-1 text-muted"></i> ${d.mobile || '—'}</span>
@@ -374,7 +374,9 @@ function initData() {
         const tbody = document.getElementById('patient-bills-table');
         if (!tbody) return;
         tbody.innerHTML = '';
-        if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="3" class="text-muted text-center py-3">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr>`; return; }
+        const trans = window.translations || {};
+        const lang = window.currentLanguage || 'en';
+        if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="3" class="text-muted text-center py-3">${trans[lang]?.no_bills_yet || 'No bills yet.'}</td></tr>`; return; }
 
         const bills = Object.entries(snap.val())
             .filter(([id, bill]) => bill.patientId === user.uid)
@@ -400,12 +402,14 @@ function initData() {
             return;
         }
 
+        const trans = window.translations || {};
+        const lang = window.currentLanguage || 'en';
         const certs = Object.entries(snap.val())
             .filter(([id, c]) => c.patientId === user.uid)
             .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
 
         if (certs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_certificates || 'No certificates available.'}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${trans[lang]?.no_certificates || 'No certificates available.'}</td></tr>`;
             return;
         }
 
@@ -416,14 +420,39 @@ function initData() {
                 <td><small>${c.sessionDate}</small></td>
                 <td><div class="small text-muted text-truncate" style="max-width: 250px;" title="${c.note}">${c.note || '—'}</div></td>
                 <td>
-                    <a href="${c.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-download me-1"></i> <span data-i18n="download">${translations[currentLanguage]?.download || 'Download'}</span>
-                    </a>
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadCertificate('${id}')">
+                        <i class="fas fa-download me-1"></i> <span data-i18n="download">${trans[lang]?.download || 'Download'}</span>
+                    </button>
                 </td>`;
             tbody.appendChild(row);
         });
     });
 }
+
+window.downloadCertificate = async (certId) => {
+    try {
+        const { generateCertificate } = await import('./pdf-generator.js');
+        const certSnap = await get(dbRef(rtdb, 'certificates/' + certId));
+        if (!certSnap.exists()) throw new Error("Certificate not found");
+        const certData = certSnap.val();
+
+        const userSnap = await get(dbRef(rtdb, 'users/' + certData.patientId));
+        const patientData = userSnap.val() || { fullName: certData.patientName || 'Patient' };
+
+        const doctorId = certData.doctorId;
+        const doctorSnap = await get(dbRef(rtdb, 'users/' + doctorId));
+        const doctorData = doctorSnap.val() || { fullName: certData.doctorName || 'Doctor' };
+
+        await generateCertificate(doctorData, patientData, {
+            sessionDate: certData.sessionDate,
+            diagnosis: certData.note || certData.diagnosis,
+            medications: certData.medications || '—'
+        }, true);
+    } catch (error) {
+        console.error("Download failed:", error);
+        alert("Error generating PDF: " + error.message);
+    }
+};
 
 window.acknowledgeDischarge = async () => {
     const user = auth.currentUser;
@@ -440,7 +469,10 @@ window.downloadBill = async (billId) => {
     const patient = userSnap.val() || {};
 
     const doc = new jsPDF();
-    doc.setFontSize(20); doc.text('Clinique Online Invoice', 14, 20);
+    const trans = window.translations || {};
+    const lang = window.currentLanguage || 'en';
+    const clinicName = trans[lang]?.title || 'Clinique Online';
+    doc.setFontSize(20); doc.text(`${clinicName} Invoice`, 14, 20);
     doc.setFontSize(12);
     doc.text(`Patient: ${patient.fullName || '—'}`, 14, 40);
     doc.text(`Date: ${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}`, 14, 50);

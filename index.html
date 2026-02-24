@@ -60,7 +60,8 @@
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg glass-card m-3 sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary" href="#"><i class="fas fa-hospital-user me-2"></i>Clinique Online</a>
+            <a class="navbar-brand text-primary" href="#"><i class="fas fa-hospital-user me-2"></i><span
+                    data-i18n="title">Online Clinic</span></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -101,7 +102,7 @@
     <section id="hero" class="container hero-section fade-in">
         <div class="row align-items-center">
             <div class="col-lg-6 text-lg-start">
-                <h1 class="display-4 fw-bold mb-4" data-i18n="welcome">Welcome to HMS</h1>
+                <h1 class="display-4 fw-bold mb-4" data-i18n="welcome">Welcome to Online Clinic</h1>
                 <p class="lead mb-5" data-i18n="welcome_desc">Manage your hospital operations efficiently with our
                     modern, secure, and intuitive
                     system. Book appointments, track your health, and stay connected with your doctors.</p>
@@ -260,7 +261,8 @@
     <footer class="glass-card m-3 mt-5 p-4">
         <div class="row align-items-center">
             <div class="col-md-4 text-center text-md-start mb-3 mb-md-0">
-                <span class="text-primary fw-bold fs-5"><i class="fas fa-hospital-user me-2"></i>Clinique Online</span>
+                <span class="text-primary fw-bold fs-5"><i class="fas fa-hospital-user me-2"></i><span
+                        data-i18n="title">Online Clinic</span></span>
                 <p class="text-muted mb-0 mt-1 small" data-i18n="footer_text">© 2026 Hospital Management System</p>
             </div>
             <div class="col-md-4 text-center mb-3 mb-md-0">
@@ -292,45 +294,68 @@
         });
     </script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-        const app = initializeApp({
-            apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
-            authDomain: "hospital-aziz.firebaseapp.com",
-            databaseURL: "https://hospital-aziz-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "hospital-aziz",
-            storageBucket: "hospital-aziz.firebasestorage.app",
-            messagingSenderId: "417257060222",
-            appId: "1:417257060222:web:50a63a521c1b1cd542252f"
-        });
-        const rtdb = getDatabase(app);
+        import { rtdb } from './js/firebase-config.js';
+        import { ref, onValue, get } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+
         const DEPT_COLORS = { cardiology: 'danger', neurology: 'primary', pediatrics: 'success', orthopedics: 'warning', dermatology: 'info', oncology: 'secondary' };
         const DEPT_ICONS = { cardiology: 'fa-heartbeat', neurology: 'fa-brain', pediatrics: 'fa-baby', orthopedics: 'fa-bone', dermatology: 'fa-spa', oncology: 'fa-ribbon' };
 
-        async function loadDoctorPreview() {
-            const snap = await get(ref(rtdb, 'users'));
+        window.loadDoctorPreview = async () => {
             const grid = document.getElementById('doctors-preview-grid');
-            if (!snap.exists()) { grid.innerHTML = '<div class="col-12 text-center text-muted">No doctors yet.</div>'; return; }
-            const doctors = Object.entries(snap.val())
-                .filter(([, u]) => u.role === 'doctor' && u.status === 'approved')
-                .slice(0, 3);
-            if (doctors.length === 0) { grid.innerHTML = '<div class="col-12 text-center text-muted">No doctors yet.</div>'; return; }
-            grid.innerHTML = doctors.map(([id, d]) => {
-                const color = DEPT_COLORS[d.department] || 'primary';
-                const icon = DEPT_ICONS[d.department] || 'fa-user-md';
-                return `<div class="col-md-4">
-                    <div class="glass-card p-4 text-center doctor-card h-100">
-                        <div class="rounded-circle bg-${color} bg-opacity-10 text-${color} d-flex align-items-center justify-content-center mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;">
-                            <i class="fas ${icon}"></i>
+            if (!grid) return;
+
+            try {
+                const snap = await get(ref(rtdb, 'public/doctors'));
+                const trans = window.translations?.[window.currentLanguage] || {};
+
+                if (!snap.exists()) {
+                    grid.innerHTML = `<div class="col-12 text-center text-muted">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
+                    return;
+                }
+
+                const data = snap.val();
+                const doctors = Object.entries(data).slice(0, 3);
+
+                if (doctors.length === 0) {
+                    grid.innerHTML = `<div class="col-12 text-center text-muted">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
+                    return;
+                }
+
+                grid.innerHTML = doctors.map(([id, d]) => {
+                    const color = DEPT_COLORS[d.department] || 'primary';
+                    const icon = DEPT_ICONS[d.department] || 'fa-user-md';
+                    const deptLabel = trans[d.department] || d.department;
+                    const slotsLabel = trans.available_slots || 'Available for appointments';
+
+                    return `<div class="col-md-4">
+                        <div class="glass-card p-4 text-center doctor-card h-100">
+                            <div class="rounded-circle bg-${color} bg-opacity-10 text-${color} d-flex align-items-center justify-content-center mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;">
+                                <i class="fas ${icon}"></i>
+                            </div>
+                            <h5 class="fw-bold mb-1">Dr. ${d.fullName || d.name || '—'}</h5>
+                            <span class="badge bg-${color} text-capitalize mb-2">${deptLabel || d.specialization || d.department || '—'}</span>
+                            <p class="text-muted small mb-0">${d.mobile ? '📞 ' + d.mobile : slotsLabel}</p>
                         </div>
-                        <h5 class="fw-bold mb-1">Dr. ${d.fullName}</h5>
-                        <span class="badge bg-${color} text-capitalize mb-2">${translations[currentLanguage][d.department] || d.department}</span>
-                        <p class="text-muted small mb-0">${d.mobile ? '📞 ' + d.mobile : (translations[currentLanguage]?.available_slots || 'Available for appointments')}</p>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-        loadDoctorPreview();
+                    </div>`;
+                }).join('');
+            } catch (error) {
+                console.error("Error loading doctors preview:", error);
+                const trans = window.translations?.[window.currentLanguage] || {};
+                let msg = trans.error_loading || 'Error loading data.';
+                if (error.code === 'PERMISSION_DENIED') {
+                    msg = 'Access denied. Please ensure the public data is synced.';
+                } else if (error.message.includes('get is not defined')) {
+                    msg = 'Internal initialization error. Please refresh.';
+                }
+                grid.innerHTML = `<div class="col-12 text-center text-danger py-4"><i class="fas fa-exclamation-triangle mb-2"></i><br>${msg}</div>`;
+            }
+        };
+
+        // Run on load
+        window.loadDoctorPreview();
+
+        // Also expose to window in case i18n needs to trigger it
+        window.updateDoctorPreview = window.loadDoctorPreview;
     </script>
 </body>
 

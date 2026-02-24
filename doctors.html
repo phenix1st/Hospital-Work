@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title data-i18n="our_specialists">Our Doctors - Clinique Online</title>
+    <title data-i18n="title">Online Clinic</title>
     <link id="bootstrap-link" rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -36,8 +36,8 @@
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg glass-card m-3 sticky-top">
         <div class="container-fluid">
-            <a class="navbar-brand text-primary" href="index.html"><i class="fas fa-hospital-user me-2"></i>Clinique
-                Online</a>
+            <a class="navbar-brand text-primary" href="index.html"><i class="fas fa-hospital-user me-2"></i><span
+                    data-i18n="title">Online Clinic</span></a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -134,19 +134,8 @@
         };
     </script>
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
-        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-
-        const app = initializeApp({
-            apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
-            authDomain: "hospital-aziz.firebaseapp.com",
-            databaseURL: "https://hospital-aziz-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "hospital-aziz",
-            storageBucket: "hospital-aziz.firebasestorage.app",
-            messagingSenderId: "417257060222",
-            appId: "1:417257060222:web:50a63a521c1b1cd542252f"
-        });
-        const rtdb = getDatabase(app);
+        import { rtdb } from './js/firebase-config.js';
+        import { ref, onValue } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
         const DEPT_COLORS = { cardiology: 'danger', neurology: 'primary', pediatrics: 'success', orthopedics: 'warning', dermatology: 'info', oncology: 'secondary' };
         const DEPT_ICONS = { cardiology: 'fa-heartbeat', neurology: 'fa-brain', pediatrics: 'fa-baby', orthopedics: 'fa-bone', dermatology: 'fa-spa', oncology: 'fa-ribbon' };
@@ -156,39 +145,60 @@
         window.renderDoctors = () => {
             const grid = document.getElementById('doctors-grid');
             const filter = window.currentFilter || 'all';
+            const trans = window.translations?.[window.currentLanguage] || {};
+
             const list = filter === 'all' ? allDoctors : allDoctors.filter(d => d.department === filter);
 
             if (list.length === 0) {
-                grid.innerHTML = `<div class="col-12 text-center text-muted py-5"><i class="fas fa-user-md fa-2x mb-3 d-block opacity-50"></i>${translations[currentLanguage].no_doctors_found}</div>`;
+                grid.innerHTML = `<div class="col-12 text-center text-muted py-5"><i class="fas fa-user-md fa-2x mb-3 d-block opacity-50"></i>${trans.no_doctors_found || 'No doctors found.'}</div>`;
                 return;
             }
 
             grid.innerHTML = list.map(d => {
                 const color = DEPT_COLORS[d.department] || 'primary';
                 const icon = DEPT_ICONS[d.department] || 'fa-user-md';
+                const deptLabel = trans[d.department] || d.department;
+                const viewCertLabel = trans.view_certificate || 'View Certificate';
+
                 return `
                 <div class="col-md-4 col-lg-3">
                     <div class="glass-card p-4 text-center doctor-card h-100">
                         <div class="rounded-circle bg-${color} bg-opacity-10 text-${color} d-flex align-items-center justify-content-center mx-auto mb-3" style="width:80px;height:80px;font-size:2rem;">
                             <i class="fas ${icon}"></i>
                         </div>
-                        <h5 class="fw-bold mb-1">Dr. ${d.fullName}</h5>
-                        <span class="badge bg-${color} text-capitalize mb-2">${translations[currentLanguage][d.department] || d.department}</span>
+                        <h5 class="fw-bold mb-1">Dr. ${d.fullName || d.name || '—'}</h5>
+                        <span class="badge bg-${color} text-capitalize mb-2">${deptLabel || d.specialization || d.department || '—'}</span>
                         <p class="text-muted small mb-2">${d.mobile ? '📞 ' + d.mobile : ''}</p>
                         ${d.certificateURL
-                        ? `<a href="${d.certificateURL}" target="_blank" class="btn btn-sm btn-outline-${color} cert-badge"><i class="fas fa-certificate me-1"></i>${translations[currentLanguage].view_certificate}</a>`
+                        ? `<a href="${d.certificateURL}" target="_blank" class="btn btn-sm btn-outline-${color} cert-badge"><i class="fas fa-certificate me-1"></i>${viewCertLabel}</a>`
                         : ''}
                     </div>
                 </div>`;
             }).join('');
         };
 
-        onValue(ref(rtdb, 'users'), snap => {
-            if (!snap.exists()) { document.getElementById('doctors-grid').innerHTML = `<div class="col-12 text-center text-muted">${translations[currentLanguage]?.no_doctors_found || 'No doctors yet.'}</div>`; return; }
-            allDoctors = Object.entries(snap.val())
-                .filter(([, u]) => u.role === 'doctor' && u.status === 'approved')
-                .map(([id, u]) => ({ id, ...u }));
-            window.renderDoctors();
+        const doctorsRef = ref(rtdb, 'public/doctors');
+        onValue(doctorsRef, snap => {
+            try {
+                const grid = document.getElementById('doctors-grid');
+                if (!snap.exists()) {
+                    const trans = window.translations?.[window.currentLanguage] || {};
+                    grid.innerHTML = `
+                        <div class="col-12 text-center text-muted py-5">
+                            <i class="fas fa-sync fa-3x mb-3 opacity-20"></i>
+                            <h4>${trans.no_doctors_found || 'No specialists synced yet.'}</h4>
+                            <p>Admin: Please use the "Sync Specialists" button in the dashboard to populate this list.</p>
+                        </div>`;
+                    return;
+                }
+                const data = snap.val();
+                allDoctors = Object.entries(data).map(([id, u]) => ({ id, ...u }));
+                window.renderDoctors();
+            } catch (err) { console.error("Success handler error:", err); }
+        }, (error) => {
+            console.error("Firebase error:", error);
+            const trans = window.translations?.[window.currentLanguage] || {};
+            document.getElementById('doctors-grid').innerHTML = `<div class="col-12 text-center text-danger py-5">${trans.error_loading || 'Waiting for specialist data sync...'}</div>`;
         });
     </script>
 </body>

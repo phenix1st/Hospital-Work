@@ -13,7 +13,7 @@ import {
 
 document.getElementById('logoutBtn')?.addEventListener('click', logout);
 
-import { generateInvoice } from './pdf-generator.js';
+import { generateInvoice, generateCertificate } from './pdf-generator.js';
 
 let currentUploadAppId = null;
 let allUsers = {};
@@ -265,24 +265,33 @@ window.viewPatientHistory = (pId) => {
                 `).reverse().join('')}
             </ul>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-6 border-start">
             <h6 class="border-bottom pb-2 mb-3" data-i18n="billing">${translations[currentLanguage]?.billing || 'Billing & Discharges'}</h6>
-            <ul class="list-group list-group-flush scrollable-list" style="max-height: 300px; overflow-y: auto;">
+            <ul class="list-group list-group-flush scrollable-list mb-4" style="max-height: 200px; overflow-y: auto;">
                 ${bills.map(b => `
                     <li class="list-group-item px-0 bg-transparent">
                         <div class="d-flex justify-content-between small fw-bold">
                             <span>${new Date(b.createdAt).toLocaleDateString()}</span>
-                            <span class="text-primary">$${b.total}</span>
-                        </div>
-                        <div class="x-small text-muted" style="font-size: 10px;">
-                            ${translations[currentLanguage]?.room_charges || 'Room'}: $${b.roomCharges} | 
-                            ${translations[currentLanguage]?.medicine_costs || 'Med'}: $${b.medicineCosts} | 
-                            ${translations[currentLanguage]?.doctor_fees || 'Fees'}: $${b.doctorFees}
+                            <span class="text-primary">${b.total} DA</span>
                         </div>
                         <button class="btn btn-xs btn-outline-info py-0 px-1 mt-1" style="font-size: 9px;" onclick="downloadPatientInvoice('${b.appointmentId}')"><i class="fas fa-file-pdf"></i> PDF</button>
                     </li>
                 `).reverse().join('')}
                 ${bills.length === 0 ? `<li class="list-group-item px-0 bg-transparent text-muted small">${translations[currentLanguage]?.no_bills_yet || 'No records found.'}</li>` : ''}
+            </ul>
+
+            <h6 class="border-bottom pb-2 mb-3" data-i18n="certificates">${translations[currentLanguage]?.certificates || 'Medical Certificates'}</h6>
+            <ul class="list-group list-group-flush scrollable-list" style="max-height: 200px; overflow-y: auto;">
+                ${Object.entries(allCertificates).filter(([id, c]) => c.patientId === pId).map(([id, c]) => `
+                    <li class="list-group-item px-0 bg-transparent">
+                        <div class="d-flex justify-content-between small fw-bold">
+                            <span>${c.sessionDate}</span>
+                            <button class="btn btn-xs btn-outline-primary py-0 px-1" style="font-size: 9px;" onclick="downloadCertificate('${id}')"><i class="fas fa-download"></i></button>
+                        </div>
+                        <div class="x-small text-muted text-truncate" style="font-size: 10px;">${c.note || ''}</div>
+                    </li>
+                `).reverse().join('')}
+                ${Object.values(allCertificates).filter(c => c.patientId === pId).length === 0 ? `<li class="list-group-item px-0 bg-transparent text-muted small">${translations[currentLanguage]?.no_certificates || 'No certificates found.'}</li>` : ''}
             </ul>
         </div>
     </div>`;
@@ -423,6 +432,26 @@ window.updateAppStatus = async (appId, status) => {
 };
 
 // ─── Certificates Management ────────────────────────────────────────────────
+window.downloadCertificate = async (certId) => {
+    try {
+        const certSnap = await get(ref(rtdb, 'certificates/' + certId));
+        if (!certSnap.exists()) throw new Error("Certificate not found");
+        const certData = certSnap.val();
+
+        const patientData = allUsers[certData.patientId] || { fullName: certData.patientName || 'Patient' };
+        const doctorData = allUsers[certData.doctorId] || { fullName: certData.doctorName || 'Doctor' };
+
+        await generateCertificate(doctorData, patientData, {
+            sessionDate: certData.sessionDate,
+            diagnosis: certData.note || certData.diagnosis,
+            medications: certData.medications || '—'
+        }, true);
+    } catch (error) {
+        console.error("Download failed:", error);
+        alert("Error generating PDF: " + error.message);
+    }
+};
+
 window.renderCertificatesList = () => {
     const user = auth.currentUser;
     const tbody = document.getElementById('certificates-table-body');
@@ -445,21 +474,15 @@ window.renderCertificatesList = () => {
             <td><small>${c.sessionDate}</small></td>
             <td><div class="text-truncate" style="max-width: 200px;" title="${c.note}">${c.note || '—'}</div></td>
             <td>
-                <a href="${c.fileUrl}" target="_blank" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-external-link-alt me-1"></i> <span data-i18n="view_content">${translations[currentLanguage]?.view_content || 'View'}</span>
-                </a>
+                <button class="btn btn-sm btn-outline-primary" onclick="downloadCertificate('${id}')">
+                    <i class="fas fa-download me-1"></i> <span data-i18n="download">${translations[currentLanguage]?.download || 'Download'}</span>
+                </button>
             </td>
         `;
         tbody.appendChild(row);
     });
 };
 
-document.getElementById('certFileInput')?.addEventListener('change', (e) => {
-    const nameDiv = document.getElementById('cert-file-name');
-    if (nameDiv && e.target.files[0]) {
-        nameDiv.textContent = e.target.files[0].name;
-    }
-});
 
 document.getElementById('certificateUploadForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -468,15 +491,19 @@ document.getElementById('certificateUploadForm')?.addEventListener('submit', asy
 
     const patientSelect = document.getElementById('certPatientSelect');
     const sessionDate = document.getElementById('certSessionDate').value;
-    const note = document.getElementById('certDiagnosisNote').value;
-    const fileInput = document.getElementById('certFileInput');
-    const file = fileInput.files[0];
+    const diagnosis = document.getElementById('certDiagnosis').value;
+    const medications = document.getElementById('certMedications').value;
+    const patientId = patientSelect.value;
 
-    if (!patientSelect.value || !file) return;
+    if (!patientId || !sessionDate || !diagnosis || !medications) {
+        alert("Please fill all fields.");
+        return;
+    }
 
     const btn = document.getElementById('certUploadBtn');
     btn.disabled = true;
-    btn.textContent = translations[currentLanguage]?.loading || 'Uploading...';
+    const loadingText = (window.translations && window.currentLanguage) ? window.translations[window.currentLanguage]?.loading : 'Processing...';
+    btn.textContent = loadingText;
 
     const progressBar = document.getElementById('cert-progress-bar');
     const statusText = document.getElementById('cert-upload-status');
@@ -485,41 +512,39 @@ document.getElementById('certificateUploadForm')?.addEventListener('submit', asy
     progressDiv.classList.remove('d-none');
 
     try {
-        const path = `certificates/${patientSelect.value}/${Date.now()}_${file.name}`;
-        const fileRef = storageRef(storage, path);
+        const trans = window.translations || {};
+        const lang = window.currentLanguage || 'en';
 
-        const uploadPromise = uploadBytes(fileRef, file);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 30000));
+        statusText.textContent = trans[lang]?.saving_data || 'Saving data...';
+        progressBar.style.width = '50%';
 
-        statusText.textContent = translations[currentLanguage]?.uploading || 'Uploading...';
-        await Promise.race([uploadPromise, timeoutPromise]);
-
-        const url = await getDownloadURL(fileRef);
+        const patientData = allUsers[patientId] || { fullName: patientSelect.options[patientSelect.selectedIndex].text };
+        const doctorData = allUsers[user.uid] || { fullName: user.email };
 
         const certData = {
-            patientId: patientSelect.value,
-            patientName: patientSelect.options[patientSelect.selectedIndex].text,
+            patientId: patientId,
+            patientName: patientData.fullName,
             doctorId: user.uid,
-            doctorName: allUsers[user.uid]?.fullName || user.email,
+            doctorName: doctorData.fullName,
             sessionDate,
-            note,
-            fileUrl: url,
-            filePath: path,
+            diagnosis,
+            medications,
+            note: diagnosis, // compatibility
             createdAt: new Date().toISOString()
         };
 
         await push(ref(rtdb, 'certificates'), certData);
+        progressBar.style.width = '100%';
 
-        alert(translations[currentLanguage]?.certificate_added_success || "Certificate uploaded successfully!");
+        alert(trans[lang]?.certificate_added_success || "Certificate saved successfully!");
         bootstrap.Modal.getInstance(document.getElementById('certificateUploadModal')).hide();
         document.getElementById('certificateUploadForm').reset();
-        document.getElementById('cert-file-name').textContent = '';
     } catch (error) {
-        console.error("Certificate upload failed:", error);
-        alert((translations[currentLanguage]?.upload_error || "Upload failed: ") + error.message);
+        console.error("Certificate process failed:", error);
+        alert((trans[lang]?.error_label || "Error: ") + error.message);
     } finally {
         btn.disabled = false;
-        btn.textContent = translations[currentLanguage]?.upload_certificate || 'Upload Certificate';
+        btn.textContent = translations[currentLanguage]?.save_and_generate || 'Save & Generate Certificate';
         progressDiv.classList.add('d-none');
     }
 });
