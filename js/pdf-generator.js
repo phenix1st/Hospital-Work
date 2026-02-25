@@ -3,152 +3,162 @@
 // <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
 export async function generateInvoice(patientData, billData) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
     const translations = window.translations || {};
     const currentLanguage = window.currentLanguage || 'en';
+    const isRTL = currentLanguage === 'ar';
 
-    // Header
-    doc.setFontSize(22);
-    const clinicName = translations[currentLanguage]?.title || "Clinique Online";
-    doc.text(`${clinicName} - HOSPITAL INVOICE`, 105, 20, { align: "center" });
+    const clinicName = translations[currentLanguage]?.title || "Online Clinic";
+    const dateLabel = translations[currentLanguage]?.date || 'Date';
+    const patientLabel = translations[currentLanguage]?.patient || 'Patient';
+    const addressLabel = translations[currentLanguage]?.address_label || 'Address';
+    const descLabel = translations[currentLanguage]?.description || 'Description';
+    const costLabel = translations[currentLanguage]?.cost || 'Cost';
+    const roomLabel = translations[currentLanguage]?.room_charges || 'Room Charges';
+    const medLabel = translations[currentLanguage]?.medicine_costs || 'Medicine Costs';
+    const doctorLabel = translations[currentLanguage]?.doctor_fees || 'Doctor Fees';
+    const totalLabel = translations[currentLanguage]?.total_cost || 'TOTAL COST';
+    const currency = translations[currentLanguage]?.currency || 'DA';
+    const footerMsg = translations[currentLanguage]?.footer_thanks || "Thank you for choosing {clinic}. Get well soon!";
 
-    doc.setFontSize(12);
-    doc.text(`Invoice Date: ${new Date().toLocaleDateString()}`, 20, 40);
-    doc.text(`Patient Name: ${patientData.fullName}`, 20, 50);
-    doc.text(`Address: ${patientData.address}`, 20, 60);
+    const element = document.createElement('div');
+    element.style.padding = '40px';
+    element.style.fontFamily = "'Inter', sans-serif";
+    element.style.color = '#333';
+    element.style.width = '700px';
+    element.style.background = 'white';
+    element.dir = isRTL ? 'rtl' : 'ltr';
 
-    // Bill Details
-    doc.line(20, 70, 190, 70);
-    doc.text("Description", 20, 80);
-    doc.text("Cost", 170, 80);
-    doc.line(20, 85, 190, 85);
+    element.innerHTML = `
+        <div style="border: 1px solid #eee; padding: 30px; min-height: 800px;">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 style="color: #0d6efd; margin: 0; font-size: 28px;">${clinicName}</h1>
+                <p style="text-transform: uppercase; letter-spacing: 2px; color: #666; margin-top: 5px;">HOSPITAL INVOICE</p>
+            </div>
 
-    doc.text("Room Charges", 20, 95);
-    doc.text(`${billData.roomCharges} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 95);
+            <div style="margin-bottom: 30px; display: flex; justify-content: space-between; flex-direction: ${isRTL ? 'row-reverse' : 'row'};">
+                <div>
+                   <p><strong>${patientLabel}:</strong> ${patientData.fullName}</p>
+                </div>
+                <div style="text-align: ${isRTL ? 'left' : 'right'};">
+                    <p><strong>${dateLabel}:</strong> ${new Date().toLocaleDateString()}</p>
+                </div>
+            </div>
 
-    doc.text("Medicine Costs", 20, 105);
-    doc.text(`${billData.medicineCosts} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 105);
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #0d6efd;">
+                        <th style="text-align: ${isRTL ? 'right' : 'left'}; padding: 10px;">${descLabel}</th>
+                        <th style="text-align: ${isRTL ? 'left' : 'right'}; padding: 10px;">${costLabel}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px 10px;">${medLabel}</td>
+                        <td style="text-align: ${isRTL ? 'left' : 'right'}; padding: 15px 10px;">${billData.medicineCosts} ${currency}</td>
+                    </tr>
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px 10px;">${doctorLabel}</td>
+                        <td style="text-align: ${isRTL ? 'left' : 'right'}; padding: 15px 10px;">${billData.doctorFees} ${currency}</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td style="padding: 20px 10px; font-weight: bold; font-size: 18px; color: #0d6efd;">${totalLabel}</td>
+                        <td style="padding: 20px 10px; text-align: ${isRTL ? 'left' : 'right'}; font-weight: bold; font-size: 20px; color: #0d6efd;">${billData.total} ${currency}</td>
+                    </tr>
+                </tfoot>
+            </table>
 
-    doc.text("Doctor Fees", 20, 115);
-    doc.text(`${billData.doctorFees} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 115);
+            <div style="text-align: center; margin-top: 50px; color: #888; border-top: 1px dashed #ccc; padding-top: 20px;">
+                <p>${footerMsg.replace("{clinic}", clinicName)}</p>
+            </div>
+        </div>
+    `;
 
-    doc.line(20, 125, 190, 125);
-    doc.setFontSize(14);
-    doc.setTextColor(13, 110, 253); // text-primary
-    doc.text("TOTAL COST", 20, 135);
-    doc.text(`${billData.total} ${translations[currentLanguage]?.currency || 'DA'}`, 170, 135);
+    const opt = {
+        margin: [0, 0, 0, 0],
+        filename: `invoice_${patientData.fullName.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+    };
 
-    // Footer
-    doc.setTextColor(100);
-    doc.setFontSize(10);
-    const footerMsg = translations[currentLanguage]?.footer_thanks || "Thank you for choosing us. Get well soon!";
-    doc.text(footerMsg.replace("{clinic}", clinicName), 105, 160, { align: "center" });
-
-    // Save PDF
-    doc.save(`invoice_${patientData.fullName.replace(/\s+/g, '_')}.pdf`);
+    return html2pdf().set(opt).from(element).save();
 }
 
 export async function generateCertificate(doctorData, patientData, certData, shouldSave = false) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const margin = 20;
-    const pageWidth = doc.internal.pageSize.getWidth();
-
     const translations = window.translations || {};
     const currentLanguage = window.currentLanguage || 'en';
+    const isRTL = currentLanguage === 'ar';
 
-    try {
-        // Border
-        doc.setDrawColor(13, 110, 253); // Primary color
-        doc.setLineWidth(1);
-        doc.rect(10, 10, pageWidth - 20, doc.internal.pageSize.getHeight() - 20);
+    const clinicName = translations[currentLanguage]?.title || "CLINIQUE ONLINE";
+    const dateLabel = translations[currentLanguage]?.date || 'Date';
+    const doctorLabel = translations[currentLanguage]?.doctor || 'Doctor';
+    const patientLabel = translations[currentLanguage]?.patient || 'Patient';
+    const diagLabel = translations[currentLanguage]?.diagnosis_label || 'Diagnosis';
+    const medLabel = translations[currentLanguage]?.medications_label || 'Recommended Medications';
+    const certHeader = translations[currentLanguage]?.certificate_header || "MEDICAL CERTIFICATE";
 
-        // Header - Clinic Branding
-        doc.setFontSize(24);
-        doc.setTextColor(13, 110, 253);
-        doc.setFont("helvetica", "bold");
-        const clinicName = translations[currentLanguage]?.title || "CLINIQUE ONLINE";
-        doc.text(clinicName.toUpperCase(), pageWidth / 2, 30, { align: "center" });
+    // Create a temporary container for the PDF content
+    const element = document.createElement('div');
+    element.style.padding = '40px';
+    element.style.fontFamily = "'Inter', sans-serif";
+    element.style.color = '#333';
+    element.style.width = '700px';
+    element.style.background = 'white';
+    element.dir = isRTL ? 'rtl' : 'ltr';
 
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.setFont("helvetica", "normal");
-        doc.text("123 Medical Drive, Health City, Algeria | +213 555 123 456", pageWidth / 2, 38, { align: "center" });
-        doc.line(margin, 45, pageWidth - margin, 45);
+    element.innerHTML = `
+        <div style="border: 4px solid #0d6efd; padding: 20px; position: relative; min-height: 900px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #0d6efd; margin-bottom: 5px; font-size: 32px; font-weight: bold; text-transform: uppercase;">${clinicName}</h1>
+                <p style="color: #666; font-size: 14px; margin: 0;">Your health is in Safe Hands | +213123456789</p>
+                <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
+                <h2 style="color: #333; font-size: 24px; font-weight: bold; margin: 20px 0;">${certHeader}</h2>
+            </div>
 
-        // Title
-        doc.setFontSize(18);
-        doc.setTextColor(0);
-        doc.setFont("helvetica", "bold");
-        doc.text(translations[currentLanguage]?.certificate_header || "MEDICAL CERTIFICATE", pageWidth / 2, 60, { align: "center" });
+            <div style="margin-bottom: 30px; line-height: 1.6;">
+                <p><strong>${dateLabel}:</strong> ${certData.sessionDate}</p>
+                <p><strong>${doctorLabel}:</strong> ${doctorData.fullName}</p>
+                <p><strong>${patientLabel}:</strong> ${patientData.fullName}</p>
+            </div>
 
-        // Certificate Details
-        doc.setFontSize(12);
-        doc.setFont("helvetica", "normal");
+            <hr style="border: 0; border-top: 1px solid #ddd; margin: 20px 0;">
 
-        let y = 80;
-        doc.setFont("helvetica", "bold");
-        const dateLabel = translations[currentLanguage]?.date || 'Date';
-        doc.text(`${dateLabel}:`, margin, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(certData.sessionDate, margin + 40, y);
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #333; font-size: 18px; font-weight: bold; margin-bottom: 10px;">${diagLabel}:</h3>
+                <p style="white-space: pre-wrap; line-height: 1.5;">${certData.diagnosis}</p>
+            </div>
 
-        y += 10;
-        doc.setFont("helvetica", "bold");
-        const doctorLabel = translations[currentLanguage]?.doctor || 'Doctor';
-        doc.text(`${doctorLabel}:`, margin, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(doctorData.fullName, margin + 40, y);
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #333; font-size: 18px; font-weight: bold; margin-bottom: 10px;">${medLabel}:</h3>
+                <p style="white-space: pre-wrap; line-height: 1.5;">${certData.medications}</p>
+            </div>
 
-        y += 10;
-        doc.setFont("helvetica", "bold");
-        const patientLabel = translations[currentLanguage]?.patient || 'Patient';
-        doc.text(`${patientLabel}:`, margin, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(patientData.fullName, margin + 40, y);
+            <div style="position: absolute; bottom: 80px; ${isRTL ? 'left: 40px;' : 'right: 40px;'} text-align: center; width: 250px;">
+                <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 10px;">
+                    <p style="font-size: 14px; margin: 0;">Doctor's Signature & Stamp</p>
+                </div>
+            </div>
 
-        y += 20;
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 10;
+            <div style="position: absolute; bottom: 20px; width: 100%; text-align: center; left: 0;">
+                <p style="font-size: 12px; color: #999;">This is an electronically generated document.</p>
+            </div>
+        </div>
+    `;
 
-        // Diagnosis Section
-        doc.setFont("helvetica", "bold");
-        const diagLabel = translations[currentLanguage]?.diagnosis_label || 'Diagnosis';
-        doc.text(`${diagLabel}:`, margin, y);
-        y += 8;
-        doc.setFont("helvetica", "normal");
-        const diagLines = doc.splitTextToSize(certData.diagnosis, pageWidth - (margin * 2));
-        doc.text(diagLines, margin, y);
-        y += (diagLines.length * 6) + 10;
+    // Options for html2pdf
+    const opt = {
+        margin: [0, 0, 0, 0],
+        filename: `certificate_${patientData.fullName.replace(/\s+/g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' }
+    };
 
-        // Medications Section
-        doc.setFont("helvetica", "bold");
-        const medLabel = translations[currentLanguage]?.medications_label || 'Recommended Medications';
-        doc.text(`${medLabel}:`, margin, y);
-        y += 8;
-        doc.setFont("helvetica", "normal");
-        const medLines = doc.splitTextToSize(certData.medications, pageWidth - (margin * 2));
-        doc.text(medLines, margin, y);
-
-        // Signature Area
-        y = doc.internal.pageSize.getHeight() - 50;
-        doc.line(pageWidth - 80, y, pageWidth - margin, y);
-        doc.setFontSize(10);
-        doc.text("Doctor's Signature & Stamp", pageWidth - 50, y + 5, { align: "center" });
-
-        // Footer
-        doc.setFontSize(9);
-        doc.setTextColor(150);
-        doc.text("This is an electronically generated document.", pageWidth / 2, doc.internal.pageSize.getHeight() - 15, { align: "center" });
-
-        if (shouldSave) {
-            doc.save(`certificate_${patientData.fullName.replace(/\s+/g, '_')}.pdf`);
-        }
-        return doc;
-    } catch (error) {
-        console.error("PDF Generation failed:", error);
-        throw error;
+    if (shouldSave) {
+        return html2pdf().set(opt).from(element).save();
+    } else {
+        return html2pdf().set(opt).from(element).outputPdf();
     }
 }

@@ -91,7 +91,7 @@ function initDoctorDashboard() {
 
             const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
                 ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-file"></i> ${i + 1}</a>`).join('')
-                : '<span class="text-muted small">—</span>';
+                : `<span class="text-muted small">${translations[currentLanguage]?.no_medical_files || 'None'}</span>`;
 
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -101,9 +101,6 @@ function initDoctorDashboard() {
                 <td>
                     <div class="d-flex align-items-center">
                         ${filesHTML}
-                        <button class="btn btn-sm btn-link p-0 ms-2 text-primary" onclick="openDoctorUploadModal('${id}')" title="Upload File">
-                            <i class="fas fa-plus-circle"></i>
-                        </button>
                     </div>
                 </td>
                 <td>
@@ -314,16 +311,14 @@ window.deleteAppointment = async (id) => {
 window.dischargeFromDoctor = async (appId, patientId) => {
     if (!confirm(translations[currentLanguage]?.confirm_discharge || 'Are you sure you want to end this session and discharge the patient?')) return;
 
-    const room = parseFloat(prompt(translations[currentLanguage]?.enter_room_charges || 'Enter Room Charges:') || 0);
     const medicine = parseFloat(prompt(translations[currentLanguage]?.enter_medicine_costs || 'Enter Medicine Costs:') || 0);
     const doctor = parseFloat(prompt(translations[currentLanguage]?.enter_doctor_fees || 'Enter Doctor Fees:') || 0);
-    const total = room + medicine + doctor;
+    const total = medicine + doctor;
 
     try {
         const billData = {
             patientId,
             appointmentId: appId,
-            roomCharges: room,
             medicineCosts: medicine,
             doctorFees: doctor,
             total,

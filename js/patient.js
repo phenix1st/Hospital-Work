@@ -348,7 +348,6 @@ function initData() {
                     noticeDiv.classList.remove('d-none');
                     let billDetails = latestBill ? `
                         <div class="mt-2 small border-top pt-2 opacity-75">
-                            <span class="me-3"><b>${translations[currentLanguage]?.room_charges || 'Room'}:</b> ${latestBill.roomCharges} ${translations[currentLanguage]?.currency || 'DA'}</span>
                             <span class="me-3"><b>${translations[currentLanguage]?.medicine_costs || 'Med'}:</b> ${latestBill.medicineCosts} ${translations[currentLanguage]?.currency || 'DA'}</span>
                             <span class="me-3"><b>${translations[currentLanguage]?.doctor_fees || 'Fees'}:</b> ${latestBill.doctorFees} ${translations[currentLanguage]?.currency || 'DA'}</span>
                             <span class="fw-bold text-primary"><b>${translations[currentLanguage]?.total || 'Total'}:</b> ${latestBill.total} ${translations[currentLanguage]?.currency || 'DA'}</span>
@@ -462,25 +461,20 @@ window.acknowledgeDischarge = async () => {
 };
 
 window.downloadBill = async (billId) => {
-    const { jsPDF } = window.jspdf;
-    const billSnap = await get(dbRef(rtdb, 'bills/' + billId));
-    const bill = billSnap.val();
-    const userSnap = await get(dbRef(rtdb, 'users/' + bill.patientId));
-    const patient = userSnap.val() || {};
+    try {
+        const { generateInvoice } = await import('./pdf-generator.js');
+        const billSnap = await get(dbRef(rtdb, 'bills/' + billId));
+        if (!billSnap.exists()) throw new Error("Bill not found");
+        const bill = billSnap.val();
 
-    const doc = new jsPDF();
-    const trans = window.translations || {};
-    const lang = window.currentLanguage || 'en';
-    const clinicName = trans[lang]?.title || 'Clinique Online';
-    doc.setFontSize(20); doc.text(`${clinicName} Invoice`, 14, 20);
-    doc.setFontSize(12);
-    doc.text(`Patient: ${patient.fullName || '—'}`, 14, 40);
-    doc.text(`Date: ${bill.createdAt ? new Date(bill.createdAt).toLocaleDateString() : '—'}`, 14, 50);
-    doc.text(`Room Charges: ${bill.roomCharges || 0} DA`, 14, 70);
-    doc.text(`Medicine Costs: ${bill.medicineCosts || 0} DA`, 14, 80);
-    doc.text(`Doctor Fees: ${bill.doctorFees || 0} DA`, 14, 90);
-    doc.setFontSize(14); doc.text(`Total: ${bill.total || 0} DA`, 14, 105);
-    doc.save(`invoice-${billId}.pdf`);
+        const userSnap = await get(dbRef(rtdb, 'users/' + bill.patientId));
+        const patient = userSnap.val() || { fullName: 'Patient' };
+
+        await generateInvoice(patient, bill);
+    } catch (error) {
+        console.error("Download failed:", error);
+        alert("Error generating PDF: " + error.message);
+    }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
