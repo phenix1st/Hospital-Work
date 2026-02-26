@@ -1,5 +1,5 @@
 import { rtdb, auth, firebaseConfig } from './firebase-config.js';
-import { logout } from './auth.js';
+import { logout, changeUserPassword } from './auth.js';
 import { generateInvoice } from './pdf-generator.js';
 import {
     ref, onValue, update, remove, push, get, set
@@ -395,15 +395,15 @@ function renderAllAppointments() {
             <td><small>${(a.description || '—').substring(0, 40)}</small></td>
             <td>
                 ${(a.medicalFiles && a.medicalFiles.length > 0)
-                    ? a.medicalFiles.map((fileObj, i) => {
-                        const url = fileObj?.url || (typeof fileObj === 'string' ? fileObj : '#');
-                        const name = fileObj?.name || `File ${i + 1}`;
-                        return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link" title="${name}">
+            ? a.medicalFiles.map((fileObj, i) => {
+                const url = fileObj?.url || (typeof fileObj === 'string' ? fileObj : '#');
+                const name = fileObj?.name || `File ${i + 1}`;
+                return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link" title="${name}">
                                     <i class="fas fa-file me-1"></i>${translations[currentLanguage]?.file || 'File'} ${i + 1}
                                 </a>`;
-                    }).join('')
-                    : '<span class="text-muted small">—</span>'
-                }
+            }).join('')
+            : '<span class="text-muted small">—</span>'
+        }
             </td>
             <td>
                 <span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger')} text-capitalize">
@@ -479,7 +479,7 @@ function renderDepartments() {
                 ? `<ul class="list-unstyled mb-0">${deptDoctors.map(d => `<li class="d-flex align-items-center gap-2 mb-2"><i class="fas fa-user-md text-${dept.color}"></i><span>${d.fullName}</span></li>`).join('')}</ul>`
                 : `<p class="text-muted small mb-0">${translations[currentLanguage]?.no_doctors_assigned || 'No doctors assigned yet.'}</p>`}
         </div>
-        </div > `;
+        </div>`;
     }).join('');
 }
 
@@ -488,13 +488,13 @@ function renderBilling() {
     const tbody = document.getElementById('billing-table');
     const entries = Object.entries(allBills);
     if (entries.length === 0) {
-        tbody.innerHTML = `< tr > <td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr > `;
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_bills_yet || 'No bills yet.'}</td></tr>`;
         return;
     }
     tbody.innerHTML = entries.map(([id, b]) => {
         const patient = allUsers[b.patientId];
         return `
-    < tr >
+    <tr>
             <td><div class="fw-bold">${patient?.fullName || (translations[currentLanguage]?.unknown || 'Unknown')}</div><small class="text-muted">${patient?.email || ''}</small></td>
             <td>${b.roomCharges || 0} ${translations[currentLanguage]?.currency || 'DA'}</td>
             <td>${b.medicineCosts || 0} ${translations[currentLanguage]?.currency || 'DA'}</td>
@@ -504,7 +504,7 @@ function renderBilling() {
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="downloadAdminInvoice('${id}')"><i class="fas fa-download me-1"></i>PDF</button>
             </td>
-        </tr > `;
+        </tr>`;
     }).join('');
 }
 
@@ -554,4 +554,40 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) initListeners();
     });
+});
+// ─── Account Settings ────────────────────────────────────────────────────────
+document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+    const errorBox = document.getElementById('passwordError');
+    const successBox = document.getElementById('passwordSuccess');
+    const btn = document.getElementById('updatePasswordBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    if (newPass !== confirmPass) {
+        errorBox.textContent = translations[currentLanguage]?.password_mismatch || "Passwords do not match!";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    if (newPass.length < 6) {
+        errorBox.textContent = translations[currentLanguage]?.password_too_short || "Password must be at least 6 characters.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserPassword(newPass);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
 });

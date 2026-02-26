@@ -125,9 +125,9 @@
             document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        let currentFilter = 'all';
+        window.currentFilter = 'all';
         window.filterDept = (dept, btn) => {
-            currentFilter = dept;
+            window.currentFilter = dept;
             document.querySelectorAll('.dept-filter').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             renderDoctors();

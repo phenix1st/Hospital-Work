@@ -27,6 +27,7 @@ window.showSection = (sectionId) => {
     document.getElementById('patients-section').classList.add('d-none');
     document.getElementById('history-section').classList.add('d-none');
     document.getElementById('certificates-section')?.classList.add('d-none');
+    document.getElementById('settings-section')?.classList.add('d-none');
     document.getElementById(sectionId).classList.remove('d-none');
 
     // Update active nav link
@@ -35,6 +36,7 @@ window.showSection = (sectionId) => {
     if (sectionId === 'patients-section') document.querySelector('[data-i18n="my_patients"]')?.classList.add('active');
     if (sectionId === 'history-section') document.querySelector('[data-i18n="history"]')?.classList.add('active');
     if (sectionId === 'certificates-section') document.querySelector('[data-i18n="session_certificates"]')?.classList.add('active');
+    if (sectionId === 'settings-section') document.querySelector('[data-i18n="account_settings"]')?.classList.add('active');
 
     if (sectionId === 'certificates-section') renderCertificatesList();
 };
@@ -379,38 +381,36 @@ document.getElementById('doctorUploadForm')?.addEventListener('submit', async (e
 
     progressDiv.classList.remove('d-none');
 
+    // Use centralized utility for uploads
+    const { uploadToCloudinary } = await import('./utils.js');
+
     try {
         const uploadedFiles = [];
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
 
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('upload_preset', 'hms_unsigned_preset');
-
-            formData.append('resource_type', 'auto');
-
-            statusText.textContent = `${translations[currentLanguage]?.uploading || 'Uploading'} ${i + 1}/${files.length}...`;
-
-            const response = await fetch('https://api.cloudinary.com/v1_1/dp3yvgmiy/auto/upload', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error?.message || `Upload failed for ${file.name}`);
+            if (statusText) {
+                const uploadingText = translations[currentLanguage]?.uploading || 'Uploading';
+                statusText.textContent = `${uploadingText} ${i + 1}/${files.length}...`;
             }
 
-            const result = await response.json();
-            uploadedFiles.push({
-                url: result.secure_url,
-                publicId: result.public_id,
-                name: file.name,
-                date: new Date().toISOString()
-            });
+            try {
+                const result = await uploadToCloudinary(file);
+                uploadedFiles.push({
+                    url: result.url,
+                    publicId: result.publicId,
+                    name: result.fileName,
+                    date: new Date().toISOString()
+                });
+            } catch (uploadErr) {
+                console.error(`Upload failed for ${file.name}:`, uploadErr);
+                // Continue with others or throw? Let's throw for now to be safe.
+                throw new Error(`Upload failed for ${file.name}: ${uploadErr.message}`);
+            }
 
-            progressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
+            if (progressBar) {
+                progressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
+            }
         }
 
         // Fetch existing files to append
@@ -423,14 +423,16 @@ document.getElementById('doctorUploadForm')?.addEventListener('submit', async (e
         });
 
         alert(translations[currentLanguage]?.upload_success || "Files uploaded successfully!");
-        bootstrap.Modal.getInstance(document.getElementById('doctorUploadModal')).hide();
+        const modalEl = document.getElementById('doctorUploadModal');
+        const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modal.hide();
     } catch (error) {
         console.error("Doctor upload failed:", error);
         alert((translations[currentLanguage]?.upload_error || "Upload failed: ") + error.message);
     } finally {
         btn.disabled = false;
         btn.textContent = translations[currentLanguage]?.confirm_booking || 'Confirm Upload';
-        progressDiv.classList.add('d-none');
+        if (progressDiv) progressDiv.classList.add('d-none');
     }
 });
 
@@ -564,4 +566,42 @@ document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
         if (user) initDoctorDashboard();
     });
+});
+// ─── Account Settings ────────────────────────────────────────────────────────
+import { changeUserPassword } from './auth.js';
+
+document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+    const errorBox = document.getElementById('passwordError');
+    const successBox = document.getElementById('passwordSuccess');
+    const btn = document.getElementById('updatePasswordBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    if (newPass !== confirmPass) {
+        errorBox.textContent = translations[currentLanguage]?.password_mismatch || "Passwords do not match!";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    if (newPass.length < 6) {
+        errorBox.textContent = translations[currentLanguage]?.password_too_short || "Password must be at least 6 characters.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserPassword(newPass);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
 });

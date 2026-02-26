@@ -208,180 +208,87 @@
         });
     </script>
     <script type="module">
-       // registration.js
-import { auth, rtdb } from './js/firebase-config.js';
-import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-import { ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
+        import { register } from './js/auth.js';
+        import { uploadToCloudinary } from './js/utils.js';
 
-// ----------------------------
-// PDF.js Import
-// ----------------------------
-import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs";
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
+        const $ = (id) => document.getElementById(id);
 
-// ----------------------------
-// Helper to get DOM element
-// ----------------------------
-const $ = (id) => document.getElementById(id);
+        $('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
 
-// ----------------------------
-// PDF → JPG conversion
-// ----------------------------
-async function pdfToJpgBlob(pdfFile) {
-    const buffer = await pdfFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument(buffer).promise;
-    const page = await pdf.getPage(1);
+            const btn = $('submitBtn');
+            const errorBox = $('errorBox');
+            errorBox.classList.add('d-none');
 
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
+            // Safe translation access
+            const lang = window.currentLanguage || 'en';
+            const trans = window.translations?.[lang] || {};
 
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+            btn.disabled = true;
+            btn.textContent = trans.registering || "Registering...";
 
-    await page.render({ canvasContext: ctx, viewport }).promise;
+            const email = $('regEmail').value.trim();
+            const password = $('regPassword').value;
+            const role = $('role').value;
 
-    return new Promise(resolve =>
-        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.9)
-    );
-}
-
-// ----------------------------
-// Upload certificate to Cloudinary
-// ----------------------------
-async function uploadCertificate(file) {
-    let uploadFile = file;
-    let fileName = file.name;
-
-    $('upload-progress').classList.remove('d-none');
-
-    try {
-        // Convert PDF to JPG if needed
-        if (file.type === 'application/pdf') {
-            uploadFile = await pdfToJpgBlob(file);
-            fileName = file.name.replace(/\.pdf$/i, '.jpg');
-        }
-
-        const formData = new FormData();
-        formData.append('file', uploadFile);
-        formData.append('upload_preset', 'hms_unsigned_preset');
-
-        const res = await fetch(
-            'https://api.cloudinary.com/v1_1/dp3yvgmiy/image/upload',
-            { method: 'POST', body: formData }
-        );
-
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error?.message || 'Upload failed');
-        }
-
-        const data = await res.json();
-        $('progress-bar').style.width = '100%';
-
-        return {
-            fileUrl: data.secure_url,
-            publicId: data.public_id,
-            fileName
-        };
-
-    } finally {
-        $('upload-progress').classList.add('d-none');
-    }
-}
-
-// ----------------------------
-// Certificate preview
-// ----------------------------
-$('certFile')?.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    $('cert-preview').textContent = file
-        ? `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
-        : '';
-});
-
-// ----------------------------
-// Registration form submit
-// ----------------------------
-$('registerForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const btn = $('submitBtn');
-    const errorBox = $('errorBox');
-    errorBox.classList.add('d-none');
-    btn.disabled = true;
-    btn.textContent = translations[currentLanguage].registering;
-
-    const email = $('regEmail').value.trim();
-    const password = $('regPassword').value;
-    const role = $('role').value;
-
-    if (role === 'admin') {
-        errorBox.textContent = 'Invalid role.';
-        errorBox.classList.remove('d-none');
-        btn.disabled = false;
-        btn.textContent = 'Complete Registration';
-        return;
-    }
-
-    try {
-        // ----------------------------
-        // Create Firebase Auth user
-        // ----------------------------
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const uid = cred.user.uid;
-
-        // ----------------------------
-        // Upload certificate if doctor
-        // ----------------------------
-        let cloudinaryData = null;
-        if (role === 'doctor') {
-            const certInput = $('certFile');
-            if (certInput.files.length > 0) {
-                const originalFile = certInput.files[0];
-                cloudinaryData = await uploadCertificate(originalFile);
+            if (role === 'admin') {
+                errorBox.textContent = 'Invalid role selection.';
+                errorBox.classList.remove('d-none');
+                btn.disabled = false;
+                btn.textContent = trans.complete_registration || 'Complete Registration';
+                return;
             }
-        }
 
-        // ----------------------------
-        // Build profile data
-        // ----------------------------
-        const profileData = {
-            email,
-            fullName: $('fullName').value,
-            address: $('address').value,
-            mobile: $('mobile').value,
-            role,
-            status: 'pending',
-            createdAt: new Date().toISOString()
-        };
+            try {
+                // ----------------------------
+                // Upload certificate if doctor
+                // ----------------------------
+                let certificateURL = '';
+                if (role === 'doctor') {
+                    const certInput = $('certFile');
+                    if (certInput.files.length > 0) {
+                        try {
+                            const uploadResult = await uploadToCloudinary(certInput.files[0]);
+                            certificateURL = uploadResult.url;
+                        } catch (uploadErr) {
+                            throw new Error("Certificate upload failed: " + uploadErr.message);
+                        }
+                    }
+                }
 
-        if (role === 'doctor') {
-            profileData.department = $('department').value;
-            if (cloudinaryData) {
-                profileData.certificateURL = cloudinaryData.fileUrl;
-                profileData.certificatePublicId = cloudinaryData.publicId;
+                // ----------------------------
+                // Build profile data
+                // ----------------------------
+                const profileData = {
+                    fullName: $('fullName').value,
+                    address: $('address').value,
+                    mobile: $('mobile').value,
+                    role: role,
+                    // Specific fields
+                    ...(role === 'doctor' ? {
+                        department: $('department').value,
+                        certificateURL: certificateURL
+                    } : {
+                        symptoms: $('symptoms').value
+                    })
+                };
+
+                // ----------------------------
+                // Call centralized register logic
+                // ----------------------------
+                await register(email, password, role, profileData);
+
+                alert(trans.registration_success || "Registration successful! Plase wait for admin approval.");
+                window.location.href = 'login.html';
+
+            } catch (err) {
+                console.error("Registration error:", err);
+                errorBox.textContent = 'Registration failed: ' + err.message;
+                errorBox.classList.remove('d-none');
+                btn.disabled = false;
+                btn.textContent = trans.complete_registration || 'Complete Registration';
             }
-        } else {
-            profileData.symptoms = $('symptoms').value;
-        }
-
-        // ----------------------------
-        // Save to Firebase Realtime Database
-        // ----------------------------
-        await set(ref(rtdb, `users/${uid}`), profileData);
-
-        alert(translations[currentLanguage].registration_success);
-        window.location.href = 'login.html';
-
-    } catch (err) {
-        errorBox.textContent = 'Registration failed: ' + err.message;
-        errorBox.classList.remove('d-none');
-        btn.disabled = false;
-        btn.textContent = 'Complete Registration';
-    }
-});
+        });
     </script>
 
 </body>

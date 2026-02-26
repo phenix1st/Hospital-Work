@@ -305,11 +305,14 @@
             if (!grid) return;
 
             try {
+                // Safe translation access
+                const lang = window.currentLanguage || 'en';
+                const trans = window.translations?.[lang] || {};
+
                 const snap = await get(ref(rtdb, 'public/doctors'));
-                const trans = window.translations?.[window.currentLanguage] || {};
 
                 if (!snap.exists()) {
-                    grid.innerHTML = `<div class="col-12 text-center text-muted">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
+                    grid.innerHTML = `<div class="col-12 text-center text-muted py-4">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
                     return;
                 }
 
@@ -317,7 +320,7 @@
                 const doctors = Object.entries(data).slice(0, 3);
 
                 if (doctors.length === 0) {
-                    grid.innerHTML = `<div class="col-12 text-center text-muted">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
+                    grid.innerHTML = `<div class="col-12 text-center text-muted py-4">${trans.no_doctors_found || 'No doctors yet.'}</div>`;
                     return;
                 }
 
@@ -340,12 +343,11 @@
                 }).join('');
             } catch (error) {
                 console.error("Error loading doctors preview:", error);
-                const trans = window.translations?.[window.currentLanguage] || {};
+                const lang = window.currentLanguage || 'en';
+                const trans = window.translations?.[lang] || {};
                 let msg = trans.error_loading || 'Error loading data.';
                 if (error.code === 'PERMISSION_DENIED') {
-                    msg = 'Access denied. Please ensure the public data is synced.';
-                } else if (error.message.includes('get is not defined')) {
-                    msg = 'Internal initialization error. Please refresh.';
+                    msg = 'Access denied. Public specialist data not yet synchronized.';
                 }
                 grid.innerHTML = `<div class="col-12 text-center text-danger py-4"><i class="fas fa-exclamation-triangle mb-2"></i><br>${msg}</div>`;
             }

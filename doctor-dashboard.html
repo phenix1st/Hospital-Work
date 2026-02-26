@@ -127,6 +127,9 @@
             <a class="nav-link" href="javascript:void(0)" data-i18n="session_certificates"
                 onclick="showSection('certificates-section'); closeSidebarOnMobile();"><i
                     class="fas fa-file-medical me-2"></i> Session Certificates</a>
+            <a class="nav-link" href="javascript:void(0)" data-i18n="account_settings"
+                onclick="showSection('settings-section'); closeSidebarOnMobile();"><i class="fas fa-cog me-2"></i>
+                Account Settings</a>
             <hr class="mx-3">
             <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn" data-i18n="logout"><i
                     class="fas fa-sign-out-alt me-2"></i> Logout</a>
@@ -253,6 +256,7 @@
                 </div>
             </div>
         </div>
+        <!-- CERTIFICATES SECTION -->
         <div id="certificates-section" class="d-none">
             <div class="glass-card p-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -277,6 +281,29 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS SECTION -->
+        <div id="settings-section" class="d-none animate-up">
+            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+                <h4 class="fw-bold mb-4" data-i18n="change_password">Change Password</h4>
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="new_password">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="6">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="confirm_password">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" required minlength="6">
+                    </div>
+                    <div id="passwordError" class="alert alert-danger d-none mb-3"></div>
+                    <div id="passwordSuccess" class="alert alert-success d-none mb-3" data-i18n="password_success">
+                        Password updated successfully!</div>
+                    <button type="submit" class="btn btn-primary w-100" id="updatePasswordBtn">
+                        <i class="fas fa-save me-2"></i> <span data-i18n="update_password">Update Password</span>
+                    </button>
+                </form>
             </div>
         </div>
     </main>

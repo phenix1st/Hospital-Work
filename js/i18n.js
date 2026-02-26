@@ -218,7 +218,15 @@ const translations = {
         certificate_header: "MEDICAL CERTIFICATE",
         saving_data: "Saving data...",
         sync_specialists: "Sync Specialists",
-        currency: "DA"
+        currency: "DA",
+        account_settings: "Account Settings",
+        change_password: "Change Password",
+        new_password: "New Password",
+        confirm_password: "Confirm New Password",
+        update_password: "Update Password",
+        password_mismatch: "Passwords do not match!",
+        password_success: "Password updated successfully!",
+        password_too_short: "Password must be at least 6 characters."
     },
     fr: {
         title: "Clinique Online",
@@ -462,7 +470,15 @@ const translations = {
         certificate_header: "CERTIFICAT MÉDICAL",
         saving_data: "Enregistrement des données...",
         sync_specialists: "Synchroniser les spécialistes",
-        currency: "DA"
+        currency: "DA",
+        account_settings: "Paramètres du compte",
+        change_password: "Changer le mot de passe",
+        new_password: "Nouveau mot de passe",
+        confirm_password: "Confirmer le nouveau mot de passe",
+        update_password: "Mettre à jour le mot de passe",
+        password_mismatch: "Les mots de passe ne correspondent pas !",
+        password_success: "Mot de passe mis à jour avec succès !",
+        password_too_short: "Le mot de passe doit comporter au moins 6 caractères."
     },
     ar: {
         title: "طبيبك عن بعد",
@@ -692,6 +708,14 @@ const translations = {
         saving_data: "جاري حفظ البيانات...",
         sync_specialists: "مزامنة الأطباء",
         currency: "دج",
+        account_settings: "إعدادات الحساب",
+        change_password: "تغيير كلمة المرور",
+        new_password: "كلمة مرور جديدة",
+        confirm_password: "تأكيد كلمة المرور الجديدة",
+        update_password: "تحديث كلمة المرور",
+        password_mismatch: "كلمات المرور غير متطابقة!",
+        password_success: "تم تحديث كلمة المرور بنجاح!",
+        password_too_short: "يجب أن تكون كلمة المرور 6 أحرف على الأقل.",
         approve: "موافقة",
         reject: "رفض"
     }

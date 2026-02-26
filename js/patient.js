@@ -1,5 +1,5 @@
 import { rtdb, auth, storage } from './firebase-config.js';
-import { logout } from './auth.js';
+import { logout, changeUserPassword } from './auth.js';
 import {
     ref as dbRef, onValue, push, get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
@@ -163,36 +163,10 @@ document.getElementById('deptSelect')?.addEventListener('change', async (e) => {
 }*/
 
 // ─────────────────────────────────────────────
-// Upload JPG directly / PDF → JPG → Cloudinary
-// ─────────────────────────────────────────────
-
-async function pdfToJpgBlob(pdfFile) {
-    const arrayBuffer = await pdfFile.arrayBuffer();
-    const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
-    const page = await pdf.getPage(1); // first page only
-
-    const viewport = page.getViewport({ scale: 2 });
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-
-    await page.render({ canvasContext: ctx, viewport }).promise;
-
-    return new Promise(resolve => {
-        canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.9);
-    });
-}
-
-// ─────────────────────────────────────────────
 // MAIN UPLOAD FUNCTION
 // ─────────────────────────────────────────────
-
-async function uploadFiles(files, receiverId) {
-    const user = auth.currentUser;
-    if (!user) throw new Error("User not authenticated");
-
+async function uploadFiles(files) {
+    const { uploadToCloudinary } = await import('./utils.js');
     const uploadedFilesData = [];
     const progressBar = document.getElementById("progress-bar");
     const uploadStatus = document.getElementById("upload-status");
@@ -202,55 +176,30 @@ async function uploadFiles(files, receiverId) {
 
     try {
         for (let i = 0; i < files.length; i++) {
-            let file = files[i];
-            let uploadFile = file;
-            let fileName = file.name;
-
-            // 🔄 Convert PDF → JPG
-            if (file.type === "application/pdf") {
-                const jpgBlob = await pdfToJpgBlob(file);
-                uploadFile = jpgBlob;
-                fileName = file.name.replace(/\.pdf$/i, ".jpg");
-            }
-
-            const formData = new FormData();
-            formData.append("file", uploadFile);
-            formData.append("upload_preset", "hms_unsigned_preset");
+            const file = files[i];
 
             if (uploadStatus) {
-                uploadStatus.textContent = `Uploading ${i + 1} / ${files.length}`;
+                const uploadingText = translations[currentLanguage]?.uploading || 'Uploading';
+                uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
             }
 
-            const response = await fetch(
-                "https://api.cloudinary.com/v1_1/dp3yvgmiy/image/upload",
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
-
-            if (!response.ok) {
-                const err = await response.json();
-                throw new Error(err.error?.message || "Cloudinary upload failed");
-            }
-
-            const result = await response.json();
+            const result = await uploadToCloudinary(file);
 
             uploadedFilesData.push({
-                url: result.secure_url,
-                publicId: result.public_id,
-                name: fileName,
+                url: result.url,
+                publicId: result.publicId,
+                name: result.fileName,
                 uploadedAt: new Date().toISOString()
             });
 
             if (progressBar) {
-                progressBar.style.width =
-                    Math.round(((i + 1) / files.length) * 100) + "%";
+                progressBar.style.width = Math.round(((i + 1) / files.length) * 100) + "%";
             }
         }
     } catch (err) {
         console.error("Upload failed:", err);
-        alert("Upload failed: " + err.message);
+        const errorLabel = translations[currentLanguage]?.upload_error || 'Upload failed: ';
+        alert(errorLabel + err.message);
         throw err;
     } finally {
         if (progressDiv) progressDiv.classList.add("d-none");
@@ -587,4 +536,40 @@ window.downloadBill = async (billId) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => { if (user) initData(); });
+});
+// ─── Account Settings ────────────────────────────────────────────────────────
+document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPass = document.getElementById('newPassword').value;
+    const confirmPass = document.getElementById('confirmPassword').value;
+    const errorBox = document.getElementById('passwordError');
+    const successBox = document.getElementById('passwordSuccess');
+    const btn = document.getElementById('updatePasswordBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    if (newPass !== confirmPass) {
+        errorBox.textContent = (window.translations?.[window.currentLanguage] || {}).password_mismatch || "Passwords do not match!";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    if (newPass.length < 6) {
+        errorBox.textContent = (window.translations?.[window.currentLanguage] || {}).password_too_short || "Password must be at least 6 characters.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserPassword(newPass);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
 });

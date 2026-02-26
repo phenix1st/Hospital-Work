@@ -156,6 +156,9 @@
             <a class="nav-link" onclick="showSection('billing'); closeSidebarOnMobile()" data-i18n="billing_nav"><i
                     class="fas fa-file-invoice-dollar me-2"></i>
                 Billing</a>
+            <a class="nav-link" onclick="showSection('settings'); closeSidebarOnMobile()"
+                data-i18n="account_settings"><i class="fas fa-cog me-2"></i>
+                Account Settings</a>
             <hr class="mx-3">
             <a class="nav-link text-danger" id="logoutBtn" data-i18n="logout"><i class="fas fa-sign-out-alt me-2"></i>
                 Logout</a>
@@ -348,6 +351,29 @@
                 </div>
             </div>
         </div>
+
+        <!-- SETTINGS SECTION -->
+        <div id="section-settings" class="section">
+            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+                <h4 class="mb-4" data-i18n="change_password">Change Password</h4>
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="new_password">New Password</label>
+                        <input type="password" class="form-control" id="newPassword" required minlength="6">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="confirm_password">Confirm New Password</label>
+                        <input type="password" class="form-control" id="confirmPassword" required minlength="6">
+                    </div>
+                    <div id="passwordError" class="alert alert-danger d-none mb-3"></div>
+                    <div id="passwordSuccess" class="alert alert-success d-none mb-3" data-i18n="password_success">
+                        Password updated successfully!</div>
+                    <button type="submit" class="btn btn-primary w-100" id="updatePasswordBtn">
+                        <i class="fas fa-save me-2"></i> <span data-i18n="update_password">Update Password</span>
+                    </button>
+                </form>
+            </div>
+        </div>
     </main>
 
     <!-- Add User Modal -->
@@ -505,7 +531,7 @@
             if (window.updateContent) window.updateContent();
 
             const navLinks = document.querySelectorAll('.nav-link');
-            const sections = ['overview', 'users', 'appointments', 'departments', 'billing'];
+            const sections = ['overview', 'users', 'appointments', 'departments', 'billing', 'settings'];
             const idx = sections.indexOf(name);
             if (idx !== -1) navLinks[idx].classList.add('active');
         }

@@ -3,7 +3,8 @@ import {
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     onAuthStateChanged,
-    signOut
+    signOut,
+    updatePassword
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
     ref,
@@ -15,52 +16,62 @@ const ADMIN_EMAILS = ["azizhospital@gmail.com", "hospitalbiskra@gmail.com"];
 
 // Check User Role and Status
 onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        const userSnap = await get(ref(rtdb, 'users/' + user.uid));
-        if (userSnap.exists()) {
-            const userData = userSnap.val();
-            const currentPath = window.location.pathname;
+    const currentPath = window.location.pathname;
+    const isAuthPage = currentPath.includes('login.html') || currentPath.includes('register.html') || currentPath === '/' || currentPath.includes('index.html');
 
-            // Special Admin Check
-            if (userData.role === 'admin') {
-                if (!ADMIN_EMAILS.includes(user.email)) {
-                    alert("Access Denied: Only the authorized hospital administrator can access this dashboard.");
-                    logout();
+    if (user) {
+        try {
+            const userSnap = await get(ref(rtdb, 'users/' + user.uid));
+            if (userSnap.exists()) {
+                const userData = userSnap.val();
+
+                // Special Admin Check
+                if (userData.role === 'admin') {
+                    if (!ADMIN_EMAILS.includes(user.email)) {
+                        alert("Access Denied: Unauthorized admin email.");
+                        logout();
+                        return;
+                    }
+                }
+
+                // Status Check
+                if (userData.status === 'pending') {
+                    if (!isAuthPage) {
+                        alert("Your account is pending admin approval.");
+                        logout();
+                    }
                     return;
                 }
-            }
 
-            if (userData.status === 'pending' && !currentPath.includes('login.html')) {
-                alert("Your account is pending admin approval.");
-                logout();
-                return;
-            }
-
-            if (userData.status === 'approved') {
-                if (userData.role === 'admin' && !currentPath.includes('admin-dashboard.html')) {
-                    window.location.href = 'admin-dashboard.html';
-                } else if (userData.role === 'doctor' && !currentPath.includes('doctor-dashboard.html')) {
-                    window.location.href = 'doctor-dashboard.html';
-                } else if (userData.role === 'patient' && !currentPath.includes('patient-dashboard.html')) {
-                    window.location.href = 'patient-dashboard.html';
+                // Redirect approved users away from auth pages
+                if (userData.status === 'approved' && isAuthPage) {
+                    if (userData.role === 'admin') window.location.href = 'admin-dashboard.html';
+                    else if (userData.role === 'doctor') window.location.href = 'doctor-dashboard.html';
+                    else if (userData.role === 'patient') window.location.href = 'patient-dashboard.html';
+                }
+            } else {
+                // User authenticated but no record in RTDB (e.g. newly created admin via Firebase Console)
+                if (user.email === ADMIN_EMAILS[0] || user.email === ADMIN_EMAILS[1]) {
+                    // This case is usually handled by login.html for the first admin
+                    if (!isAuthPage && !currentPath.includes('admin-dashboard.html')) {
+                        window.location.href = 'admin-dashboard.html';
+                    }
+                } else {
+                    if (!isAuthPage) logout();
                 }
             }
+        } catch (error) {
+            console.error("Auth state change error:", error);
         }
     } else {
-        const currentPath = window.location.pathname;
-        if (!currentPath.includes('login.html') && !currentPath.includes('register.html') && currentPath !== '/' && !currentPath.includes('index.html')) {
+        if (!isAuthPage) {
             window.location.href = 'login.html';
         }
     }
 });
 
 export async function login(email, password) {
-    try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        return userCredential.user;
-    } catch (error) {
-        throw error;
-    }
+    return signInWithEmailAndPassword(auth, email, password);
 }
 
 export async function register(email, password, role, profileData) {
@@ -89,4 +100,10 @@ export function logout() {
     signOut(auth).then(() => {
         window.location.href = 'login.html';
     });
+}
+
+export async function changeUserPassword(newPassword) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No authenticated user.");
+    return updatePassword(user, newPassword);
 }
