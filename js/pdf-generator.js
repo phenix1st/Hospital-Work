@@ -135,14 +135,9 @@ export async function generateCertificate(doctorData, patientData, certData, sho
                 <p style="white-space: pre-wrap; line-height: 1.5;">${certData.medications}</p>
             </div>
 
-            <div style="position: absolute; bottom: 80px; ${isRTL ? 'left: 40px;' : 'right: 40px;'} text-align: center; width: 250px;">
-                <div style="border-top: 1px solid #333; margin-top: 50px; padding-top: 10px;">
-                    <p style="font-size: 14px; margin: 0;">Doctor's Signature & Stamp</p>
-                </div>
-            </div>
 
             <div style="position: absolute; bottom: 20px; width: 100%; text-align: center; left: 0;">
-                <p style="font-size: 12px; color: #999;">This is an electronically generated document.</p>
+                <p style="font-size: 12px; color: #999;">2025 @ Rights are Preserved.</p>
             </div>
         </div>
     `;

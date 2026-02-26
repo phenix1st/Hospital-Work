@@ -100,9 +100,12 @@ document.getElementById('deptSelect')?.addEventListener('change', async (e) => {
 });
 
 // ─── Upload Files to Firebase Storage ────────────────────────────────────────
-async function uploadFiles(files, folder) {
-    console.log("Starting upload for", files.length, "files to", folder);
-    const urls = [];
+/*async function uploadFiles(files, receiverId) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+
+    console.log("Starting upload for", files.length, "files to Cloudinary");
+    const uploadedFilesData = [];
     const progressBar = document.getElementById('progress-bar');
     const uploadStatus = document.getElementById('upload-status');
     const progressDiv = document.getElementById('upload-progress');
@@ -112,28 +115,35 @@ async function uploadFiles(files, folder) {
     try {
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const path = `${folder}/${Date.now()}_${file.name}`;
-            console.log("Uploading file:", file.name, "to path:", path);
-            const fileRef = storageRef(storage, path);
 
-            // Using uploadBytes for simpler, more reliable uploads
-            // Including a safety timeout of 30 seconds
-            const uploadPromise = uploadBytes(fileRef, file);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Upload timed out (30s)")), 30000)
-            );
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'hms_unsigned_preset');
+
+            formData.append('resource_type', 'auto');
 
             if (uploadStatus) {
                 const uploadingText = translations[currentLanguage]?.uploading || 'Uploading...';
                 uploadStatus.textContent = `${uploadingText} ${i + 1} / ${files.length}`;
             }
 
-            await Promise.race([uploadPromise, timeoutPromise]);
-            console.log("File uploaded successfully, getting download URL...");
+            const response = await fetch('https://api.cloudinary.com/v1_1/dp3yvgmiy/auto/upload', {
+                method: 'POST',
+                body: formData
+            });
 
-            const url = await getDownloadURL(fileRef);
-            console.log("Got URL:", url);
-            urls.push(url);
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || `Upload failed for ${file.name}`);
+            }
+
+            const result = await response.json();
+            uploadedFilesData.push({
+                url: result.secure_url,
+                publicId: result.public_id,
+                name: file.name,
+                date: new Date().toISOString()
+            });
 
             if (progressBar) {
                 const pct = Math.round(((i + 1) / files.length) * 100);
@@ -142,18 +152,112 @@ async function uploadFiles(files, folder) {
         }
     } catch (err) {
         console.error("Upload process aborted:", err);
-        // Alert the user specifically about upload failures
         const errorLabel = translations[currentLanguage]?.upload_error || 'Upload failed: ';
-        alert(errorLabel + (err.message || err.code || "Unknown error"));
+        alert(errorLabel + (err.message || "Unknown error"));
         throw err;
     } finally {
         if (progressDiv) progressDiv.classList.add('d-none');
     }
 
-    console.log("Upload complete. URLs:", urls);
-    return urls;
+    return uploadedFilesData;
+}*/
+
+// ─────────────────────────────────────────────
+// Upload JPG directly / PDF → JPG → Cloudinary
+// ─────────────────────────────────────────────
+
+async function pdfToJpgBlob(pdfFile) {
+    const arrayBuffer = await pdfFile.arrayBuffer();
+    const pdf = await window.pdfjsLib.getDocument(arrayBuffer).promise;
+    const page = await pdf.getPage(1); // first page only
+
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    return new Promise(resolve => {
+        canvas.toBlob(blob => resolve(blob), "image/jpeg", 0.9);
+    });
 }
 
+// ─────────────────────────────────────────────
+// MAIN UPLOAD FUNCTION
+// ─────────────────────────────────────────────
+
+async function uploadFiles(files, receiverId) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("User not authenticated");
+
+    const uploadedFilesData = [];
+    const progressBar = document.getElementById("progress-bar");
+    const uploadStatus = document.getElementById("upload-status");
+    const progressDiv = document.getElementById("upload-progress");
+
+    if (progressDiv) progressDiv.classList.remove("d-none");
+
+    try {
+        for (let i = 0; i < files.length; i++) {
+            let file = files[i];
+            let uploadFile = file;
+            let fileName = file.name;
+
+            // 🔄 Convert PDF → JPG
+            if (file.type === "application/pdf") {
+                const jpgBlob = await pdfToJpgBlob(file);
+                uploadFile = jpgBlob;
+                fileName = file.name.replace(/\.pdf$/i, ".jpg");
+            }
+
+            const formData = new FormData();
+            formData.append("file", uploadFile);
+            formData.append("upload_preset", "hms_unsigned_preset");
+
+            if (uploadStatus) {
+                uploadStatus.textContent = `Uploading ${i + 1} / ${files.length}`;
+            }
+
+            const response = await fetch(
+                "https://api.cloudinary.com/v1_1/dp3yvgmiy/image/upload",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.error?.message || "Cloudinary upload failed");
+            }
+
+            const result = await response.json();
+
+            uploadedFilesData.push({
+                url: result.secure_url,
+                publicId: result.public_id,
+                name: fileName,
+                uploadedAt: new Date().toISOString()
+            });
+
+            if (progressBar) {
+                progressBar.style.width =
+                    Math.round(((i + 1) / files.length) * 100) + "%";
+            }
+        }
+    } catch (err) {
+        console.error("Upload failed:", err);
+        alert("Upload failed: " + err.message);
+        throw err;
+    } finally {
+        if (progressDiv) progressDiv.classList.add("d-none");
+    }
+
+    return uploadedFilesData;
+}
 // ─── Booking Form ─────────────────────────────────────────────────────────────
 document.getElementById('bookingForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -193,9 +297,9 @@ document.getElementById('bookingForm')?.addEventListener('submit', async (e) => 
         const files = filesInput ? Array.from(filesInput.files) : [];
 
         // Upload medical files if any
-        let medicalFileURLs = [];
+        let medicalFilesMetadata = [];
         if (files.length > 0) {
-            medicalFileURLs = await uploadFiles(files, `medical-files/${user.uid}`);
+            medicalFilesMetadata = await uploadFiles(files, doctorSel.value);
         }
 
         const userSnap = await get(dbRef(rtdb, 'users/' + user.uid));
@@ -207,7 +311,7 @@ document.getElementById('bookingForm')?.addEventListener('submit', async (e) => 
             date: appDate,
             time: appTime,
             description: document.getElementById('appDesc').value,
-            medicalFiles: medicalFileURLs,
+            medicalFiles: medicalFilesMetadata,
             status: 'pending',
             createdAt: new Date().toISOString()
         };
@@ -313,7 +417,11 @@ function initData() {
             if (!next && app.status === 'approved' && app.date >= today) next = app;
 
             const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
-                ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="File ${i + 1}"><i class="fas fa-file"></i></a>`).join('')
+                ? app.medicalFiles.map((fileObj, i) => {
+                    const url = typeof fileObj === 'string' ? fileObj : fileObj.url;
+                    const name = typeof fileObj === 'string' ? `File ${i + 1}` : (fileObj.name || `File ${i + 1}`);
+                    return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="${name}"><i class="fas fa-file"></i></a>`;
+                }).join('')
                 : '';
 
             const row = document.createElement('tr');

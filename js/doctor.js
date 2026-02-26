@@ -90,7 +90,11 @@ function initDoctorDashboard() {
             if (app.date === todayStr) today++;
 
             const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
-                ? app.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1"><i class="fas fa-file"></i> ${i + 1}</a>`).join('')
+                ? app.medicalFiles.map((fileObj, i) => {
+                    const url = typeof fileObj === 'string' ? fileObj : fileObj.url;
+                    const name = typeof fileObj === 'string' ? `File ${i + 1}` : (fileObj.name || `File ${i + 1}`);
+                    return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="${name}"><i class="fas fa-file"></i> ${i + 1}</a>`;
+                }).join('')
                 : `<span class="text-muted small">${translations[currentLanguage]?.no_medical_files || 'None'}</span>`;
 
             const row = document.createElement('tr');
@@ -376,23 +380,35 @@ document.getElementById('doctorUploadForm')?.addEventListener('submit', async (e
     progressDiv.classList.remove('d-none');
 
     try {
-        const newUrls = [];
+        const uploadedFiles = [];
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
-            const path = `medical-files/${currentUploadAppId}/${Date.now()}_${file.name}`;
-            const fileRef = storageRef(storage, path);
 
-            // Robust upload logic with timeout
-            const uploadPromise = uploadBytes(fileRef, file);
-            const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error("Timeout")), 30000)
-            );
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'hms_unsigned_preset');
+
+            formData.append('resource_type', 'auto');
 
             statusText.textContent = `${translations[currentLanguage]?.uploading || 'Uploading'} ${i + 1}/${files.length}...`;
-            await Promise.race([uploadPromise, timeoutPromise]);
 
-            const url = await getDownloadURL(fileRef);
-            newUrls.push(url);
+            const response = await fetch('https://api.cloudinary.com/v1_1/dp3yvgmiy/auto/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || `Upload failed for ${file.name}`);
+            }
+
+            const result = await response.json();
+            uploadedFiles.push({
+                url: result.secure_url,
+                publicId: result.public_id,
+                name: file.name,
+                date: new Date().toISOString()
+            });
 
             progressBar.style.width = Math.round(((i + 1) / files.length) * 100) + '%';
         }
@@ -403,7 +419,7 @@ document.getElementById('doctorUploadForm')?.addEventListener('submit', async (e
         if (!Array.isArray(existingFiles)) existingFiles = [];
 
         await update(ref(rtdb, `appointments/${currentUploadAppId}`), {
-            medicalFiles: [...existingFiles, ...newUrls]
+            medicalFiles: [...existingFiles, ...uploadedFiles]
         });
 
         alert(translations[currentLanguage]?.upload_success || "Files uploaded successfully!");

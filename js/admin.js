@@ -381,10 +381,12 @@ window.viewUserContent = (uid) => {
 function renderAllAppointments() {
     const tbody = document.getElementById('all-appointments-table');
     const entries = Object.entries(allAppointments);
+
     if (entries.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`;
         return;
     }
+
     tbody.innerHTML = entries.map(([id, a]) => `
         <tr>
             <td><div class="fw-bold">${a.patientName || '—'}</div></td>
@@ -393,10 +395,21 @@ function renderAllAppointments() {
             <td><small>${(a.description || '—').substring(0, 40)}</small></td>
             <td>
                 ${(a.medicalFiles && a.medicalFiles.length > 0)
-            ? a.medicalFiles.map((url, i) => `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link"><i class="fas fa-file me-1"></i>${translations[currentLanguage]?.file || 'File'} ${i + 1}</a>`).join('')
-            : '<span class="text-muted small">—</span>'}
+                    ? a.medicalFiles.map((fileObj, i) => {
+                        const url = fileObj?.url || (typeof fileObj === 'string' ? fileObj : '#');
+                        const name = fileObj?.name || `File ${i + 1}`;
+                        return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1 mb-1 cert-link" title="${name}">
+                                    <i class="fas fa-file me-1"></i>${translations[currentLanguage]?.file || 'File'} ${i + 1}
+                                </a>`;
+                    }).join('')
+                    : '<span class="text-muted small">—</span>'
+                }
             </td>
-            <td><span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger')} text-capitalize">${translations[currentLanguage]?.[a.status] || a.status}</span></td>
+            <td>
+                <span class="badge bg-${a.status === 'completed' ? 'info' : (a.status === 'approved' ? 'success' : a.status === 'pending' ? 'warning text-dark' : 'danger')} text-capitalize">
+                    ${translations[currentLanguage]?.[a.status] || a.status}
+                </span>
+            </td>
             <td>
                 <div class="d-flex gap-1">
                     ${a.status === 'pending' ? `
@@ -412,24 +425,24 @@ function renderAllAppointments() {
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
                     ` : ''}
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAppointment('${id}')"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteAppointment('${id}')" title="${translations[currentLanguage]?.delete || 'Delete'}">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </td>
         </tr>
     `).join('');
 }
 
+// Delete function
 window.deleteAppointment = async (id) => {
     if (confirm(translations[currentLanguage]?.confirm_delete_appointment || "Delete this appointment?")) {
-        await remove(ref(rtdb, 'appointments/' + id));
-    }
-};
-
-window.updateAppointmentStatus = async (appId, status) => {
-    try {
-        await update(ref(rtdb, 'appointments/' + appId), { status });
-    } catch (error) {
-        alert((translations[currentLanguage]?.error_updating_appointment || "Error updating appointment: ") + error.message);
+        try {
+            await remove(ref(rtdb, 'appointments/' + id));
+            alert(translations[currentLanguage]?.appointment_deleted || "Appointment deleted successfully.");
+        } catch (err) {
+            alert((translations[currentLanguage]?.error_label || "Error: ") + err.message);
+        }
     }
 };
 
@@ -451,7 +464,7 @@ function renderDepartments() {
         const countTxt = deptDoctors.length + ' ' + (deptDoctors.length === 1 ? (translations[currentLanguage]?.doctor_assigned || 'doctor') : (translations[currentLanguage]?.doctors_assigned || 'doctors'));
 
         return `
-        < div class= "col-md-4" >
+        
         <div class="glass-card p-4">
             <div class="d-flex align-items-center mb-3">
                 <div class="rounded-circle bg-${dept.color} text-white d-flex align-items-center justify-content-center me-3" style="width:48px;height:48px;">

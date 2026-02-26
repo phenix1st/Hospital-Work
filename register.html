@@ -208,77 +208,180 @@
         });
     </script>
     <script type="module">
-        import { auth, rtdb, storage } from './js/firebase-config.js';
-        import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
-        import { ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
-        import { ref as sRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-storage.js";
+       // registration.js
+import { auth, rtdb } from './js/firebase-config.js';
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            errorBox.classList.add('d-none');
+// ----------------------------
+// PDF.js Import
+// ----------------------------
+import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
 
-            const email = document.getElementById('regEmail').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const role = document.getElementById('role').value;
+// ----------------------------
+// Helper to get DOM element
+// ----------------------------
+const $ = (id) => document.getElementById(id);
 
-            btn.textContent = translations[currentLanguage].registering;
+// ----------------------------
+// PDF → JPG conversion
+// ----------------------------
+async function pdfToJpgBlob(pdfFile) {
+    const buffer = await pdfFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
+    const page = await pdf.getPage(1);
 
-            if (role === 'admin') { errorBox.textContent = 'Invalid role.'; errorBox.classList.remove('d-none'); btn.disabled = false; btn.textContent = 'Complete Registration'; return; }
+    const viewport = page.getViewport({ scale: 2 });
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-            try {
-                // Create Firebase Auth user
-                const cred = await createUserWithEmailAndPassword(auth, email, password);
-                const uid = cred.user.uid;
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
 
-                // Upload doctor certificate if present
-                let certificateURL = null;
-                if (role === 'doctor') {
-                    const certInput = document.getElementById('certFile');
-                    if (certInput.files.length > 0) {
-                        const file = certInput.files[0];
-                        document.getElementById('upload-progress').classList.remove('d-none');
-                        const fileRef = sRef(storage, `certificates/${uid}_${file.name}`);
-                        await new Promise((resolve, reject) => {
-                            const task = uploadBytesResumable(fileRef, file);
-                            task.on('state_changed',
-                                snap => { document.getElementById('progress-bar').style.width = Math.round(snap.bytesTransferred / snap.totalBytes * 100) + '%'; },
-                                reject,
-                                async () => { certificateURL = await getDownloadURL(task.snapshot.ref); resolve(); }
-                            );
-                        });
-                        document.getElementById('upload-progress').classList.add('d-none');
-                    }
-                }
+    await page.render({ canvasContext: ctx, viewport }).promise;
 
-                // Build profile data
-                const profileData = {
-                    email,
-                    fullName: document.getElementById('fullName').value,
-                    address: document.getElementById('address').value,
-                    mobile: document.getElementById('mobile').value,
-                    role,
-                    status: 'pending',
-                    createdAt: new Date().toISOString()
-                };
-                if (role === 'doctor') {
-                    profileData.department = document.getElementById('department').value;
-                    if (certificateURL) profileData.certificateURL = certificateURL;
-                } else {
-                    profileData.symptoms = document.getElementById('symptoms').value;
-                }
+    return new Promise(resolve =>
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', 0.9)
+    );
+}
 
-                await set(ref(rtdb, 'users/' + uid), profileData);
+// ----------------------------
+// Upload certificate to Cloudinary
+// ----------------------------
+async function uploadCertificate(file) {
+    let uploadFile = file;
+    let fileName = file.name;
 
-                alert(translations[currentLanguage].registration_success);
-                window.location.href = 'login.html';
-            } catch (error) {
-                errorBox.textContent = 'Registration failed: ' + error.message;
-                errorBox.classList.remove('d-none');
-                btn.disabled = false;
-                btn.textContent = 'Complete Registration';
+    $('upload-progress').classList.remove('d-none');
+
+    try {
+        // Convert PDF to JPG if needed
+        if (file.type === 'application/pdf') {
+            uploadFile = await pdfToJpgBlob(file);
+            fileName = file.name.replace(/\.pdf$/i, '.jpg');
+        }
+
+        const formData = new FormData();
+        formData.append('file', uploadFile);
+        formData.append('upload_preset', 'hms_unsigned_preset');
+
+        const res = await fetch(
+            'https://api.cloudinary.com/v1_1/dp3yvgmiy/image/upload',
+            { method: 'POST', body: formData }
+        );
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error?.message || 'Upload failed');
+        }
+
+        const data = await res.json();
+        $('progress-bar').style.width = '100%';
+
+        return {
+            fileUrl: data.secure_url,
+            publicId: data.public_id,
+            fileName
+        };
+
+    } finally {
+        $('upload-progress').classList.add('d-none');
+    }
+}
+
+// ----------------------------
+// Certificate preview
+// ----------------------------
+$('certFile')?.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    $('cert-preview').textContent = file
+        ? `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`
+        : '';
+});
+
+// ----------------------------
+// Registration form submit
+// ----------------------------
+$('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btn = $('submitBtn');
+    const errorBox = $('errorBox');
+    errorBox.classList.add('d-none');
+    btn.disabled = true;
+    btn.textContent = translations[currentLanguage].registering;
+
+    const email = $('regEmail').value.trim();
+    const password = $('regPassword').value;
+    const role = $('role').value;
+
+    if (role === 'admin') {
+        errorBox.textContent = 'Invalid role.';
+        errorBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.textContent = 'Complete Registration';
+        return;
+    }
+
+    try {
+        // ----------------------------
+        // Create Firebase Auth user
+        // ----------------------------
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const uid = cred.user.uid;
+
+        // ----------------------------
+        // Upload certificate if doctor
+        // ----------------------------
+        let cloudinaryData = null;
+        if (role === 'doctor') {
+            const certInput = $('certFile');
+            if (certInput.files.length > 0) {
+                const originalFile = certInput.files[0];
+                cloudinaryData = await uploadCertificate(originalFile);
             }
-        });
+        }
+
+        // ----------------------------
+        // Build profile data
+        // ----------------------------
+        const profileData = {
+            email,
+            fullName: $('fullName').value,
+            address: $('address').value,
+            mobile: $('mobile').value,
+            role,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        };
+
+        if (role === 'doctor') {
+            profileData.department = $('department').value;
+            if (cloudinaryData) {
+                profileData.certificateURL = cloudinaryData.fileUrl;
+                profileData.certificatePublicId = cloudinaryData.publicId;
+            }
+        } else {
+            profileData.symptoms = $('symptoms').value;
+        }
+
+        // ----------------------------
+        // Save to Firebase Realtime Database
+        // ----------------------------
+        await set(ref(rtdb, `users/${uid}`), profileData);
+
+        alert(translations[currentLanguage].registration_success);
+        window.location.href = 'login.html';
+
+    } catch (err) {
+        errorBox.textContent = 'Registration failed: ' + err.message;
+        errorBox.classList.remove('d-none');
+        btn.disabled = false;
+        btn.textContent = 'Complete Registration';
+    }
+});
     </script>
 
 </body>
