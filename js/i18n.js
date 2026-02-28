@@ -226,7 +226,20 @@ const translations = {
         update_password: "Update Password",
         password_mismatch: "Passwords do not match!",
         password_success: "Password updated successfully!",
-        password_too_short: "Password must be at least 6 characters."
+        password_too_short: "Password must be at least 6 characters.",
+        change_email: "Change Email Address",
+        current_email: "Current Email (Read-only)",
+        new_email: "New Email Address",
+        update_email: "Update Email",
+        email_success: "Verification email sent to new address. Please verify to complete the change.",
+        email_verification_sent: "Verification email sent! Please check your new inbox.",
+        invalid_email: "Please enter a valid email address.",
+        medical_costs: "Medical Costs",
+        doctor_fees: "Doctor Fees",
+        total_cost: "Total Cost",
+        session_date: "Session Date",
+        diagnosis_label: "Diagnosis",
+        medications_label: "Recommended Medications"
     },
     fr: {
         title: "Clinique Online",
@@ -478,7 +491,20 @@ const translations = {
         update_password: "Mettre à jour le mot de passe",
         password_mismatch: "Les mots de passe ne correspondent pas !",
         password_success: "Mot de passe mis à jour avec succès !",
-        password_too_short: "Le mot de passe doit comporter au moins 6 caractères."
+        password_too_short: "Le mot de passe doit comporter au moins 6 caractères.",
+        change_email: "Changer l'adresse e-mail",
+        current_email: "E-mail actuel (lecture seule)",
+        new_email: "Nouvelle adresse e-mail",
+        update_email: "Mettre à jour l'e-mail",
+        email_success: "Un e-mail de vérification a été envoyé à la nouvelle adresse. Veuillez vérifier pour terminer le changement.",
+        email_verification_sent: "E-mail de vérification envoyé ! Veuillez consulter votre nouvelle boîte de réception.",
+        invalid_email: "Veuillez saisir une adresse e-mail valide.",
+        medical_costs: "Frais médicaux",
+        doctor_fees: "Honoraires du médecin",
+        total_cost: "Coût total",
+        session_date: "Date de la session",
+        diagnosis_label: "Diagnostic",
+        medications_label: "Médicaments recommandés"
     },
     ar: {
         title: "طبيبك عن بعد",
@@ -716,8 +742,20 @@ const translations = {
         password_mismatch: "كلمات المرور غير متطابقة!",
         password_success: "تم تحديث كلمة المرور بنجاح!",
         password_too_short: "يجب أن تكون كلمة المرور 6 أحرف على الأقل.",
-        approve: "موافقة",
-        reject: "رفض"
+        reject: "رفض",
+        change_email: "تغيير البريد الإلكتروني",
+        current_email: "البريد الإلكتروني الحالي (للقراءة فقط)",
+        new_email: "البريد الإلكتروني الجديد",
+        update_email: "تحديث البريد الإلكتروني",
+        email_success: "تم إرسال بريد التحقق إلى العنوان الجديد. يرجى التحقق لإكمال التغيير.",
+        email_verification_sent: "تم إرسال بريد التحقق! يرجى التحقق من بريدك الجديد.",
+        invalid_email: "يرجى إدخال عنوان بريد إلكتروني صحيح.",
+        medical_costs: "تكاليف طبية",
+        doctor_fees: "أتعاب الطبيب",
+        total_cost: "التكلفة الإجمالية",
+        session_date: "تاريخ الجلسة",
+        diagnosis_label: "التشخيص",
+        medications_label: "الأدوية الموصى بها"
     }
 };
 

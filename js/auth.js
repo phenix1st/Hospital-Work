@@ -4,7 +4,8 @@ import {
     createUserWithEmailAndPassword,
     onAuthStateChanged,
     signOut,
-    updatePassword
+    updatePassword,
+    verifyBeforeUpdateEmail
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import {
     ref,
@@ -106,4 +107,20 @@ export async function changeUserPassword(newPassword) {
     const user = auth.currentUser;
     if (!user) throw new Error("No authenticated user.");
     return updatePassword(user, newPassword);
+}
+
+export async function changeUserEmail(newEmail) {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No authenticated user.");
+
+    // This sends a verification email to the NEW email address.
+    // The email only actually changes in Firebase Auth after the user clicks the link.
+    // However, we should also update the email in our RTDB for profile consistency.
+    await verifyBeforeUpdateEmail(user, newEmail);
+
+    // Update in RTDB (optional: you might want to wait for actual verification, 
+    // but for this app's simplicity we'll update the record now)
+    await set(ref(rtdb, `users/${user.uid}/email`), newEmail);
+
+    return true;
 }

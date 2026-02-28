@@ -1,5 +1,5 @@
 import { rtdb, auth, firebaseConfig } from './firebase-config.js';
-import { logout, changeUserPassword } from './auth.js';
+import { logout, changeUserPassword, changeUserEmail } from './auth.js';
 import { generateInvoice } from './pdf-generator.js';
 import {
     ref, onValue, update, remove, push, get, set
@@ -552,7 +552,12 @@ window.dischargePatient = async (patientId, appointmentId = null) => {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
-        if (user) initListeners();
+        if (user) {
+            initListeners();
+            // Pre-fill current email in settings
+            const emailInput = document.getElementById('currentEmail');
+            if (emailInput) emailInput.value = user.email || '';
+        }
     });
 });
 // ─── Account Settings ────────────────────────────────────────────────────────
@@ -584,6 +589,39 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
         await changeUserPassword(newPass);
         successBox.classList.remove('d-none');
         e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('changeEmailForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newEmail = document.getElementById('newEmail').value;
+    const errorBox = document.getElementById('emailError');
+    const successBox = document.getElementById('emailSuccess');
+    const btn = document.getElementById('updateEmailBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    // Basic validation
+    if (!newEmail || !newEmail.includes('@')) {
+        errorBox.textContent = translations[currentLanguage]?.invalid_email || "Please enter a valid email address.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserEmail(newEmail);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+        // Keep current email field updated with the NEW pending email for clarity
+        const emailInput = document.getElementById('currentEmail');
+        if (emailInput) emailInput.value = newEmail;
     } catch (err) {
         errorBox.textContent = err.message;
         errorBox.classList.remove('d-none');

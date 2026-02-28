@@ -135,6 +135,21 @@ export async function generateCertificate(doctorData, patientData, certData, sho
                 <p style="white-space: pre-wrap; line-height: 1.5;">${certData.medications}</p>
             </div>
 
+            <div style="margin-top: 40px; border-top: 2px solid #0d6efd; padding-top: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span><strong>${translations[currentLanguage]?.medical_costs || 'Medical Costs'}:</strong></span>
+                    <span>${certData.medicalCosts || 0} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span><strong>${translations[currentLanguage]?.doctor_fees || 'Doctor Fees'}:</strong></span>
+                    <span>${certData.doctorFees || 0} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 18px; color: #0d6efd;">
+                    <span><strong>${translations[currentLanguage]?.total_cost || 'TOTAL COST'}:</strong></span>
+                    <span style="font-weight: bold;">${certData.totalCost || 0} ${translations[currentLanguage]?.currency || 'DA'}</span>
+                </div>
+            </div>
+
 
             <div style="position: absolute; bottom: 20px; width: 100%; text-align: center; left: 0;">
                 <p style="font-size: 12px; color: #999;">2025 @ Rights are Preserved.</p>

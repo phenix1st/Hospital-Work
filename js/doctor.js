@@ -1,5 +1,5 @@
 import { rtdb, auth, storage } from './firebase-config.js';
-import { logout } from './auth.js';
+import { logout, changeUserEmail } from './auth.js';
 import {
     ref,
     onValue,
@@ -457,7 +457,10 @@ window.downloadCertificate = async (certId) => {
         await generateCertificate(doctorData, patientData, {
             sessionDate: certData.sessionDate,
             diagnosis: certData.note || certData.diagnosis,
-            medications: certData.medications || '—'
+            medications: certData.medications || '—',
+            medicalCosts: certData.medicalCosts || 0,
+            doctorFees: certData.doctorFees || 0,
+            totalCost: certData.totalCost || 0
         }, true);
     } catch (error) {
         console.error("Download failed:", error);
@@ -534,6 +537,10 @@ document.getElementById('certificateUploadForm')?.addEventListener('submit', asy
         const patientData = allUsers[patientId] || { fullName: patientSelect.options[patientSelect.selectedIndex].text };
         const doctorData = allUsers[user.uid] || { fullName: user.email };
 
+        const medicalCosts = parseFloat(document.getElementById('certMedicalCosts').value || 0);
+        const doctorFees = parseFloat(document.getElementById('certDoctorFees').value || 0);
+        const totalCost = medicalCosts + doctorFees;
+
         const certData = {
             patientId: patientId,
             patientName: patientData.fullName,
@@ -542,6 +549,9 @@ document.getElementById('certificateUploadForm')?.addEventListener('submit', asy
             sessionDate,
             diagnosis,
             medications,
+            medicalCosts,
+            doctorFees,
+            totalCost,
             note: diagnosis, // compatibility
             createdAt: new Date().toISOString()
         };
@@ -564,7 +574,12 @@ document.getElementById('certificateUploadForm')?.addEventListener('submit', asy
 
 document.addEventListener('DOMContentLoaded', () => {
     auth.onAuthStateChanged(user => {
-        if (user) initDoctorDashboard();
+        if (user) {
+            initDoctorDashboard();
+            // Pre-fill current email in settings
+            const emailInput = document.getElementById('currentEmail');
+            if (emailInput) emailInput.value = user.email || '';
+        }
     });
 });
 // ─── Account Settings ────────────────────────────────────────────────────────
@@ -598,6 +613,37 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
         await changeUserPassword(newPass);
         successBox.classList.remove('d-none');
         e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('changeEmailForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newEmail = document.getElementById('newEmail').value;
+    const errorBox = document.getElementById('emailError');
+    const successBox = document.getElementById('emailSuccess');
+    const btn = document.getElementById('updateEmailBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    if (!newEmail || !newEmail.includes('@')) {
+        errorBox.textContent = translations[currentLanguage]?.invalid_email || "Please enter a valid email address.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserEmail(newEmail);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+        const emailInput = document.getElementById('currentEmail');
+        if (emailInput) emailInput.value = newEmail;
     } catch (err) {
         errorBox.textContent = err.message;
         errorBox.classList.remove('d-none');

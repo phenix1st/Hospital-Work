@@ -24,6 +24,7 @@
             backdrop-filter: blur(10px);
             border-right: 1px solid var(--glass-border);
             padding-top: 2rem;
+            overflow-y: auto;
             transition: transform 0.3s ease;
         }
 
@@ -156,21 +157,22 @@
     </aside>
 
     <main class="main-content">
-        <header class="d-flex justify-content-between align-items-center mb-5">
+        <header class="d-flex justify-content-between align-items-center mb-5 flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
                 <button class="btn btn-primary d-lg-none" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <div>
-                    <h2 class="fw-bold mb-0" data-i18n="welcome_health">My Health</h2>
-                    <p class="text-muted mb-0" data-i18n="welcome_health_desc">Manage your appointments and medical
-                        records</p>
+                <div class="min-width-0">
+                    <h2 class="fw-bold mb-0 text-truncate" data-i18n="welcome_health">My Health</h2>
+                    <p class="text-muted d-none d-sm-block mb-0" data-i18n="welcome_health_desc">Manage your
+                        appointments and medical records</p>
                 </div>
             </div>
-            <div class="d-flex gap-3">
+            <div class="d-flex gap-2 align-items-center ms-auto">
                 <div class="dropdown lang-switcher">
                     <button class="btn btn-link nav-link dropdown-toggle p-2" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
+                        <i class="fas fa-globe me-1"></i> <span class="d-none d-md-inline"
+                            data-i18n="select_language">Language</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" onclick="setLanguage('en')">English</a></li>
@@ -178,7 +180,7 @@
                         <li><a class="dropdown-item" onclick="setLanguage('ar')">العربية</a></li>
                     </ul>
                 </div>
-                <button class="btn btn-outline-secondary" onclick="toggleTheme()"><i id="theme-icon"
+                <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()"><i id="theme-icon"
                         class="fas fa-moon"></i></button>
             </div>
         </header>
@@ -267,7 +269,7 @@
 
         <!-- SETTINGS SECTION -->
         <div id="section-settings" class="dashboard-section section d-none">
-            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+            <div class="glass-card p-4 mx-auto mb-4" style="max-width: 500px;">
                 <h4 class="fw-bold mb-4" data-i18n="change_password">Change Password</h4>
                 <form id="changePasswordForm">
                     <div class="mb-3">
@@ -283,6 +285,26 @@
                         Password updated successfully!</div>
                     <button type="submit" class="btn btn-primary w-100" id="updatePasswordBtn">
                         <i class="fas fa-save me-2"></i> <span data-i18n="update_password">Update Password</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+                <h4 class="fw-bold mb-4" data-i18n="change_email">Change Email</h4>
+                <form id="changeEmailForm">
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="current_email">Current Email</label>
+                        <input type="email" class="form-control" id="currentEmail" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="new_email">New Email</label>
+                        <input type="email" class="form-control" id="newEmail" required>
+                    </div>
+                    <div id="emailError" class="alert alert-danger d-none mb-3"></div>
+                    <div id="emailSuccess" class="alert alert-success d-none mb-3" data-i18n="email_verification_sent">
+                        Verification email sent! Please check your new inbox.</div>
+                    <button type="submit" class="btn btn-primary w-100" id="updateEmailBtn">
+                        <i class="fas fa-envelope me-2"></i> <span data-i18n="update_email">Update Email</span>
                     </button>
                 </form>
             </div>
@@ -396,25 +418,25 @@
             "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
         window.pdfjsLib = pdfjsLib;
 
-        function toggleTheme() {
+        window.toggleTheme = function () {
             const html = document.documentElement;
             const theme = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-bs-theme', theme);
             document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
-        }
+        };
 
-        function toggleSidebar() {
+        window.toggleSidebar = function () {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('show');
             overlay.classList.toggle('show');
-        }
+        };
 
-        function closeSidebarOnMobile() {
+        window.closeSidebarOnMobile = function () {
             if (window.innerWidth < 992) {
-                toggleSidebar();
+                window.toggleSidebar();
             }
-        }
+        };
 
         // Show file names preview
         document.addEventListener('DOMContentLoaded', () => {
@@ -430,7 +452,6 @@
             });
         });
     </script>
-    <script src="js/i18n.js"></script>
     <script type="module" src="js/patient.js"></script>
 </body>
 

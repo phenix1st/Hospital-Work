@@ -166,20 +166,22 @@
     </aside>
 
     <main class="main-content">
-        <header class="d-flex justify-content-between align-items-center mb-4">
+        <header class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div class="d-flex align-items-center gap-3">
                 <button class="btn btn-primary d-lg-none" onclick="toggleSidebar()">
                     <i class="fas fa-bars"></i>
                 </button>
-                <div>
-                    <h2 class="fw-bold" id="section-title" data-i18n="overview">Overview</h2>
-                    <p class="text-muted mb-0" data-i18n="admin_welcome">Welcome back, Administrator</p>
+                <div class="min-width-0">
+                    <h2 class="fw-bold mb-0 text-truncate" id="section-title" data-i18n="overview">Overview</h2>
+                    <p class="text-muted mb-0 d-none d-sm-block" data-i18n="admin_welcome">Welcome back, Administrator
+                    </p>
                 </div>
             </div>
-            <div class="d-flex gap-3">
+            <div class="d-flex gap-2 align-items-center ms-auto">
                 <div class="dropdown lang-switcher">
                     <button class="btn btn-link nav-link dropdown-toggle p-2" type="button" data-bs-toggle="dropdown">
-                        <i class="fas fa-globe me-1"></i> <span data-i18n="select_language">Language</span>
+                        <i class="fas fa-globe me-1"></i> <span class="d-none d-md-inline"
+                            data-i18n="select_language">Language</span>
                     </button>
                     <ul class="dropdown-menu">
                         <li><a class="dropdown-item" onclick="setLanguage('en')">English</a></li>
@@ -187,7 +189,7 @@
                         <li><a class="dropdown-item" onclick="setLanguage('ar')">العربية</a></li>
                     </ul>
                 </div>
-                <button class="btn btn-outline-secondary" onclick="toggleTheme()"><i id="theme-icon"
+                <button class="btn btn-outline-secondary btn-sm" onclick="toggleTheme()"><i id="theme-icon"
                         class="fas fa-moon"></i></button>
             </div>
         </header>
@@ -354,7 +356,7 @@
 
         <!-- SETTINGS SECTION -->
         <div id="section-settings" class="section">
-            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+            <div class="glass-card p-4 mx-auto mb-4" style="max-width: 500px;">
                 <h4 class="mb-4" data-i18n="change_password">Change Password</h4>
                 <form id="changePasswordForm">
                     <div class="mb-3">
@@ -370,6 +372,26 @@
                         Password updated successfully!</div>
                     <button type="submit" class="btn btn-primary w-100" id="updatePasswordBtn">
                         <i class="fas fa-save me-2"></i> <span data-i18n="update_password">Update Password</span>
+                    </button>
+                </form>
+            </div>
+
+            <div class="glass-card p-4 mx-auto" style="max-width: 500px;">
+                <h4 class="mb-4" data-i18n="change_email">Change Email</h4>
+                <form id="changeEmailForm">
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="current_email">Current Email</label>
+                        <input type="email" class="form-control" id="currentEmail" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" data-i18n="new_email">New Email</label>
+                        <input type="email" class="form-control" id="newEmail" required>
+                    </div>
+                    <div id="emailError" class="alert alert-danger d-none mb-3"></div>
+                    <div id="emailSuccess" class="alert alert-success d-none mb-3" data-i18n="email_verification_sent">
+                        Verification email sent! Please check your new inbox.</div>
+                    <button type="submit" class="btn btn-primary w-100" id="updateEmailBtn">
+                        <i class="fas fa-envelope me-2"></i> <span data-i18n="update_email">Update Email</span>
                     </button>
                 </form>
             </div>
@@ -506,26 +528,28 @@
             document.getElementById('theme-icon').className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        function toggleSidebar() {
+        window.toggleSidebar = function () {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');
             sidebar.classList.toggle('show');
             overlay.classList.toggle('show');
-        }
+        };
 
-        function closeSidebarOnMobile() {
+        window.closeSidebarOnMobile = function () {
             if (window.innerWidth < 992) {
                 toggleSidebar();
             }
-        }
+        };
 
-        function showSection(name) {
+        window.showSection = function (name) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.getElementById('section-' + name).classList.add('active');
 
             const titleEl = document.getElementById('section-title');
-            titleEl.setAttribute('data-i18n', name === 'overview' ? 'dashboard' : (name === 'users' ? 'manage_users' : (name === 'billing' ? 'billing_nav' : name)));
+            if (titleEl) {
+                titleEl.setAttribute('data-i18n', name === 'overview' ? 'dashboard' : (name === 'users' ? 'manage_users' : (name === 'billing' ? 'billing_nav' : name)));
+            }
 
             // Re-run i18n to update the title text
             if (window.updateContent) window.updateContent();
@@ -533,10 +557,9 @@
             const navLinks = document.querySelectorAll('.nav-link');
             const sections = ['overview', 'users', 'appointments', 'departments', 'billing', 'settings'];
             const idx = sections.indexOf(name);
-            if (idx !== -1) navLinks[idx].classList.add('active');
-        }
+            if (idx !== -1 && navLinks[idx]) navLinks[idx].classList.add('active');
+        };
     </script>
-    <script src="js/i18n.js"></script>
     <script type="module" src="js/admin.js"></script>
 </body>
 

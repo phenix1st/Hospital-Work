@@ -1,5 +1,5 @@
 import { rtdb, auth, storage } from './firebase-config.js';
-import { logout, changeUserPassword } from './auth.js';
+import { logout, changeUserPassword, changeUserEmail } from './auth.js';
 import {
     ref as dbRef, onValue, push, get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
@@ -502,7 +502,10 @@ window.downloadCertificate = async (certId) => {
         await generateCertificate(doctorData, patientData, {
             sessionDate: certData.sessionDate,
             diagnosis: certData.note || certData.diagnosis,
-            medications: certData.medications || '—'
+            medications: certData.medications || '—',
+            medicalCosts: certData.medicalCosts || 0,
+            doctorFees: certData.doctorFees || 0,
+            totalCost: certData.totalCost || 0
         }, true);
     } catch (error) {
         console.error("Download failed:", error);
@@ -535,7 +538,14 @@ window.downloadBill = async (billId) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    auth.onAuthStateChanged(user => { if (user) initData(); });
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            initData();
+            // Pre-fill current email in settings
+            const emailInput = document.getElementById('currentEmail');
+            if (emailInput) emailInput.value = user.email || '';
+        }
+    });
 });
 // ─── Account Settings ────────────────────────────────────────────────────────
 document.getElementById('changePasswordForm')?.addEventListener('submit', async (e) => {
@@ -566,6 +576,39 @@ document.getElementById('changePasswordForm')?.addEventListener('submit', async 
         await changeUserPassword(newPass);
         successBox.classList.remove('d-none');
         e.target.reset();
+    } catch (err) {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+    } finally {
+        btn.disabled = false;
+    }
+});
+
+document.getElementById('changeEmailForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newEmail = document.getElementById('newEmail').value;
+    const errorBox = document.getElementById('emailError');
+    const successBox = document.getElementById('emailSuccess');
+    const btn = document.getElementById('updateEmailBtn');
+
+    errorBox.classList.add('d-none');
+    successBox.classList.add('d-none');
+
+    const trans = window.translations?.[window.currentLanguage] || {};
+
+    if (!newEmail || !newEmail.includes('@')) {
+        errorBox.textContent = trans.invalid_email || "Please enter a valid email address.";
+        errorBox.classList.remove('d-none');
+        return;
+    }
+
+    btn.disabled = true;
+    try {
+        await changeUserEmail(newEmail);
+        successBox.classList.remove('d-none');
+        e.target.reset();
+        const emailInput = document.getElementById('currentEmail');
+        if (emailInput) emailInput.value = newEmail;
     } catch (err) {
         errorBox.textContent = err.message;
         errorBox.classList.remove('d-none');

@@ -78,10 +78,46 @@ body {
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .fade-in {
     animation: fadeIn 0.8s ease forwards;
+}
+
+/* Responsive Header Fixes */
+header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (max-width: 576px) {
+    header h2 {
+        font-size: 1.25rem;
+    }
+
+    .lang-switcher .btn {
+        padding: 0.25rem 0.5rem !important;
+    }
+}
+
+.sidebar {
+    overflow-y: auto;
+}
+
+/* Truncate long text in cards/tables */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
