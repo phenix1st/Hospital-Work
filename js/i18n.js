@@ -461,7 +461,7 @@ const translations = {
         loading: "Chargement...",
         view_all_doctors: "Voir tous les docteurs",
         session_certificates: "Certificats de Session",
-        issue_certificate: "Émettre un Certificat",
+        issue_certificate: "Émettre une ordonnance",
         certificate_upload_desc: "Téléchargez un certificat de session (PDF de préférence)",
         diagnosis_note: "Note de Diagnostic/Session",
         session_date: "Date de la Session",
@@ -508,8 +508,8 @@ const translations = {
     },
     ar: {
         title: "طبيبك عن بعد",
-        welcome: "مرحباً بكم في طبيبك عن بعد",
-        welcome_desc: "صحتكم أولويتنا. احجز موعدك مع أفضل الأطباء اليوم.",
+        welcome: "مرحباً بكم في العيادة أونلاين",
+        welcome_desc: "قم بإدارة مواعيدك وسجلاتك الطبية بسهولة من خلال نظامنا الحديث والآمن. احجز موعدك وتواصل مع أطبائك في أي وقت.",
         book_now: "احجز الآن",
         view_doctors: "عرض الأطباء",
         our_services: "خدماتنا",
@@ -528,6 +528,8 @@ const translations = {
         footer_text: "&copy; 2026 طبيبك عن بعد. جميع الحقوق محفوظة.",
         footer_thanks: "شكراً لاختياركم {clinic}. نتمنى لكم الشفاء العاجل!",
         dashboard: "لوحة التحكم",
+        book_appointment: "حجز موعد",
+        my_appointments: "مواعيدي",
         doctors: "الأطباء",
         departments: "الأقسام",
         about: "حول",
@@ -711,7 +713,7 @@ const translations = {
         available_slots: "متاح للمواعيد",
         contact_success_alert: "شكراً لك! سنتواصل معك قريباً.",
         session_certificates: "شهادات الجلسة",
-        issue_certificate: "إصدار شهادة",
+        issue_certificate: "اصدار الوصفة الطبية",
         certificate_upload_desc: "تحميل شهادة الجلسة (يفضل PDF)",
         diagnosis_note: "ملاحظة التشخيص/الجلسة",
         session_date: "تاريخ الجلسة",
@@ -779,7 +781,25 @@ function updateContent() {
             } else if (element.tagName === 'IMG') {
                 element.alt = translations[currentLanguage][key];
             } else {
-                element.innerText = translations[currentLanguage][key];
+                // If element has icon, find or create span for text
+                const icon = element.querySelector('i');
+                if (icon) {
+                    let textSpan = element.querySelector('.i18n-text');
+                    if (!textSpan) {
+                        textSpan = document.createElement('span');
+                        textSpan.className = 'i18n-text';
+                        // Move text nodes to span
+                        Array.from(element.childNodes).forEach(node => {
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                textSpan.appendChild(node);
+                            }
+                        });
+                        element.appendChild(textSpan);
+                    }
+                    textSpan.innerText = translations[currentLanguage][key];
+                } else {
+                    element.innerText = translations[currentLanguage][key];
+                }
             }
         }
     });

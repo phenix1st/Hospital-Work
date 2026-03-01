@@ -135,24 +135,30 @@
             </button>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link active" href="#" data-i18n="dashboard" onclick="showSection('section-dashboard')"><i
-                    class="fas fa-home me-2"></i> Dashboard</a>
+            <a class="nav-link active" href="#" onclick="showSection('section-dashboard')">
+                <i class="fas fa-home me-2"></i> <span data-i18n="dashboard">Dashboard</span>
+            </a>
             <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#bookingModal"
-                data-i18n="book_appointment" onclick="closeSidebarOnMobile()"><i class="fas fa-calendar-plus me-2"></i>
-                Book Appointment</a>
-            <a class="nav-link" href="#" data-i18n="my_appointments" onclick="showSection('section-appointments')"><i
-                    class="fas fa-history me-2"></i> My
-                Appointments</a>
-            <a class="nav-link" href="#" data-i18n="bills_invoices" onclick="showSection('section-bills')"><i
-                    class="fas fa-file-invoice me-2"></i> Bills & Invoices</a>
-            <a class="nav-link" href="#" data-i18n="session_certificates"
-                onclick="showSection('section-certificates')"><i class="fas fa-file-medical me-2"></i> Medical
-                Certificates</a>
-            <a class="nav-link" href="#" data-i18n="account_settings" onclick="showSection('section-settings')"><i
-                    class="fas fa-cog me-2"></i> Account Settings</a>
+                onclick="closeSidebarOnMobile()">
+                <i class="fas fa-calendar-plus me-2"></i> <span data-i18n="book_appointment">Book Appointment</span>
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('section-appointments')">
+                <i class="fas fa-history me-2"></i> <span data-i18n="my_appointments">My Appointments</span>
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('section-bills')">
+                <i class="fas fa-file-invoice me-2"></i> <span data-i18n="bills_invoices">Bills & Invoices</span>
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('section-certificates')">
+                <i class="fas fa-file-medical me-2"></i> <span data-i18n="session_certificates">Medical
+                    Certificates</span>
+            </a>
+            <a class="nav-link" href="#" onclick="showSection('section-settings')">
+                <i class="fas fa-cog me-2"></i> <span data-i18n="account_settings">Account Settings</span>
+            </a>
             <hr class="mx-3">
-            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn" data-i18n="logout"><i
-                    class="fas fa-sign-out-alt me-2"></i> Logout</a>
+            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn">
+                <i class="fas fa-sign-out-alt me-2"></i> <span data-i18n="logout">Logout</span>
+            </a>
         </nav>
     </aside>
 

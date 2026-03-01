@@ -117,23 +117,30 @@
             </button>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link active" href="javascript:void(0)" data-i18n="my_schedule"
-                onclick="showSection('requests-section'); closeSidebarOnMobile();"><i
-                    class="fas fa-calendar-alt me-2"></i> My Schedule</a>
-            <a class="nav-link" href="javascript:void(0)" data-i18n="my_patients"
-                onclick="showSection('patients-section'); closeSidebarOnMobile();"><i
-                    class="fas fa-user-injured me-2"></i> My Patients</a>
-            <a class="nav-link" href="javascript:void(0)" data-i18n="history"
-                onclick="showHistorySection(); closeSidebarOnMobile();"><i class="fas fa-history me-2"></i> History</a>
-            <a class="nav-link" href="javascript:void(0)" data-i18n="session_certificates"
-                onclick="showSection('certificates-section'); closeSidebarOnMobile();"><i
-                    class="fas fa-file-medical me-2"></i> Session Certificates</a>
-            <a class="nav-link" href="javascript:void(0)" data-i18n="account_settings"
-                onclick="showSection('settings-section'); closeSidebarOnMobile();"><i class="fas fa-cog me-2"></i>
-                Account Settings</a>
+            <a class="nav-link active" href="javascript:void(0)"
+                onclick="showSection('requests-section'); closeSidebarOnMobile();">
+                <i class="fas fa-calendar-alt me-2"></i> <span data-i18n="my_schedule">My Schedule</span>
+            </a>
+            <a class="nav-link" href="javascript:void(0)"
+                onclick="showSection('patients-section'); closeSidebarOnMobile();">
+                <i class="fas fa-user-injured me-2"></i> <span data-i18n="my_patients">My Patients</span>
+            </a>
+            <a class="nav-link" href="javascript:void(0)" onclick="showHistorySection(); closeSidebarOnMobile();">
+                <i class="fas fa-history me-2"></i> <span data-i18n="history">History</span>
+            </a>
+            <a class="nav-link" href="javascript:void(0)"
+                onclick="showSection('certificates-section'); closeSidebarOnMobile();">
+                <i class="fas fa-file-medical me-2"></i> <span data-i18n="session_certificates">Session
+                    Certificates</span>
+            </a>
+            <a class="nav-link" href="javascript:void(0)"
+                onclick="showSection('settings-section'); closeSidebarOnMobile();">
+                <i class="fas fa-cog me-2"></i> <span data-i18n="account_settings">Account Settings</span>
+            </a>
             <hr class="mx-3">
-            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn" data-i18n="logout"><i
-                    class="fas fa-sign-out-alt me-2"></i> Logout</a>
+            <a class="nav-link text-danger" href="javascript:void(0)" id="logoutBtn">
+                <i class="fas fa-sign-out-alt me-2"></i> <span data-i18n="logout">Logout</span>
+            </a>
         </nav>
     </aside>
 

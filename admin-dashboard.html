@@ -142,26 +142,28 @@
             </button>
         </div>
         <nav class="nav flex-column">
-            <a class="nav-link active" onclick="showSection('overview'); closeSidebarOnMobile()"
-                data-i18n="dashboard"><i class="fas fa-chart-line me-2"></i>
-                Dashboard</a>
-            <a class="nav-link" onclick="showSection('users'); closeSidebarOnMobile()" data-i18n="manage_users"><i
-                    class="fas fa-users me-2"></i> Manage Users</a>
-            <a class="nav-link" onclick="showSection('appointments'); closeSidebarOnMobile()"
-                data-i18n="appointments"><i class="fas fa-calendar-check me-2"></i>
-                Appointments</a>
-            <a class="nav-link" onclick="showSection('departments'); closeSidebarOnMobile()" data-i18n="departments"><i
-                    class="fas fa-building me-2"></i>
-                Departments</a>
-            <a class="nav-link" onclick="showSection('billing'); closeSidebarOnMobile()" data-i18n="billing_nav"><i
-                    class="fas fa-file-invoice-dollar me-2"></i>
-                Billing</a>
-            <a class="nav-link" onclick="showSection('settings'); closeSidebarOnMobile()"
-                data-i18n="account_settings"><i class="fas fa-cog me-2"></i>
-                Account Settings</a>
+            <a class="nav-link active" onclick="showSection('overview'); closeSidebarOnMobile()">
+                <i class="fas fa-chart-line me-2"></i> <span data-i18n="dashboard">Dashboard</span>
+            </a>
+            <a class="nav-link" onclick="showSection('users'); closeSidebarOnMobile()">
+                <i class="fas fa-users me-2"></i> <span data-i18n="manage_users">Manage Users</span>
+            </a>
+            <a class="nav-link" onclick="showSection('appointments'); closeSidebarOnMobile()">
+                <i class="fas fa-calendar-check me-2"></i> <span data-i18n="appointments">Appointments</span>
+            </a>
+            <a class="nav-link" onclick="showSection('departments'); closeSidebarOnMobile()">
+                <i class="fas fa-building me-2"></i> <span data-i18n="departments">Departments</span>
+            </a>
+            <a class="nav-link" onclick="showSection('billing'); closeSidebarOnMobile()">
+                <i class="fas fa-file-invoice-dollar me-2"></i> <span data-i18n="billing_nav">Billing</span>
+            </a>
+            <a class="nav-link" onclick="showSection('settings'); closeSidebarOnMobile()">
+                <i class="fas fa-cog me-2"></i> <span data-i18n="account_settings">Account Settings</span>
+            </a>
             <hr class="mx-3">
-            <a class="nav-link text-danger" id="logoutBtn" data-i18n="logout"><i class="fas fa-sign-out-alt me-2"></i>
-                Logout</a>
+            <a class="nav-link text-danger" id="logoutBtn">
+                <i class="fas fa-sign-out-alt me-2"></i> <span data-i18n="logout">Logout</span>
+            </a>
         </nav>
     </aside>
 
