@@ -427,6 +427,7 @@
                             <select class="form-select" name="role" required onchange="toggleAddUserFields(this.value)">
                                 <option value="patient" data-i18n="patient">Patient</option>
                                 <option value="doctor" data-i18n="doctor">Doctor</option>
+                                <option value="admin" data-i18n="admin">Admin</option>
                             </select>
                         </div>
                         <div id="add-doctor-fields" style="display:none;">
@@ -476,6 +477,7 @@
                                 onchange="toggleEditUserFields(this.value)">
                                 <option value="patient" data-i18n="patient">Patient</option>
                                 <option value="doctor" data-i18n="doctor">Doctor</option>
+                                <option value="admin" data-i18n="admin">Admin</option>
                             </select>
                         </div>
                         <div id="edit-doctor-fields" style="display:none;">
@@ -536,6 +538,8 @@
             sidebar.classList.toggle('show');
             overlay.classList.toggle('show');
         };
+
+
 
         window.closeSidebarOnMobile = function () {
             if (window.innerWidth < 992) {

@@ -13,7 +13,6 @@ import {
     get
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-const ADMIN_EMAILS = ["azizhospital@gmail.com", "hospitalbiskra@gmail.com"];
 
 // Check User Role and Status
 onAuthStateChanged(auth, async (user) => {
@@ -28,11 +27,6 @@ onAuthStateChanged(auth, async (user) => {
 
                 // Special Admin Check
                 if (userData.role === 'admin') {
-                    if (!ADMIN_EMAILS.includes(user.email)) {
-                        alert("Access Denied: Unauthorized admin email.");
-                        logout();
-                        return;
-                    }
                 }
 
                 // Status Check
@@ -51,15 +45,8 @@ onAuthStateChanged(auth, async (user) => {
                     else if (userData.role === 'patient') window.location.href = 'patient-dashboard.html';
                 }
             } else {
-                // User authenticated but no record in RTDB (e.g. newly created admin via Firebase Console)
-                if (user.email === ADMIN_EMAILS[0] || user.email === ADMIN_EMAILS[1]) {
-                    // This case is usually handled by login.html for the first admin
-                    if (!isAuthPage && !currentPath.includes('admin-dashboard.html')) {
-                        window.location.href = 'admin-dashboard.html';
-                    }
-                } else {
-                    if (!isAuthPage) logout();
-                }
+                // User authenticated but no record in RTDB
+                if (!isAuthPage) logout();
             }
         } catch (error) {
             console.error("Auth state change error:", error);

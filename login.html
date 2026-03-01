@@ -71,7 +71,6 @@
         import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
         import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-        const ADMIN_EMAILS = ["azizhospital@gmail.com", "hospitalbiskra@gmail.com"];
 
         function showError(msg) {
             const box = document.getElementById('errorBox');
@@ -101,17 +100,6 @@
                 const snap = await get(ref(rtdb, 'users/' + user.uid));
 
                 if (!snap.exists()) {
-                    if (ADMIN_EMAILS.includes(email)) {
-                        await set(ref(rtdb, 'users/' + user.uid), {
-                            email: email,
-                            fullName: "Hospital Admin",
-                            role: "admin",
-                            status: "approved",
-                            createdAt: new Date().toISOString()
-                        });
-                        window.location.href = 'admin-dashboard.html';
-                        return;
-                    }
                     showError("Account not found. Please contact admin.");
                     btn.disabled = false;
                     btn.textContent = trans.login || 'Login';

@@ -119,7 +119,7 @@ export async function generateCertificate(doctorData, patientData, certData, sho
 
             <div style="margin-bottom: 30px; line-height: 1.6;">
                 <p><strong>${dateLabel}:</strong> ${certData.sessionDate}</p>
-                <p><strong>${doctorLabel}:</strong> ${doctorData.fullName}</p>
+                <p><strong>${doctorLabel}:</strong> ${doctorData.fullName} (${translations[currentLanguage]?.[doctorData.department] || doctorData.department || '—'})</p>
                 <p><strong>${patientLabel}:</strong> ${patientData.fullName}</p>
             </div>
 

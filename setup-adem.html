@@ -2,16 +2,15 @@
 <html>
 
 <head>
-    <title>Second Admin Setup - HMS</title>
+    <title>New Admin Setup - HMS</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 
 <body class="d-flex align-items-center justify-content-center" style="min-height:100vh; background:#f0f4f8;">
     <div class="card shadow p-5 text-center" style="max-width:450px; width:100%;">
-        <h3 class="mb-3">🏥 HMS Biskra Initial Admin Setup</h3>
-        <p class="text-muted mb-4">This is a one-time setup to create the Biskra administrator account. You can change
-            this email later via the Admin Dashboard.</p>
-        <button id="setupBtn" class="btn btn-primary btn-lg" onclick="setupAdmin()">Setup Biskra Admin</button>
+        <h3 class="mb-3">🏥 New Admin Registration</h3>
+        <p class="text-muted mb-4">Click below to create the admin account for <strong>adem@estin.dz</strong>.</p>
+        <button id="setupBtn" class="btn btn-primary btn-lg" onclick="setupAdmin()">Create Admin Account</button>
         <div id="status" class="mt-4"></div>
     </div>
 
@@ -20,8 +19,6 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
         import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-database.js";
 
-        // Importing config from the project's config file via relative path is tricky in raw script blocks, 
-        // using the same values as in firebase-config.js
         const firebaseConfig = {
             apiKey: "AIzaSyAEEYS5XiE3Bjn15tgv3xshdkZJXNtwV1c",
             authDomain: "hospital-aziz.firebaseapp.com",
@@ -42,24 +39,27 @@
             btn.disabled = true;
             btn.textContent = 'Working...';
 
+            const email = "adem@estin.dz";
+            const password = "123456";
+
             try {
                 status.innerHTML = `<div class="alert alert-info">🚀 Creating Firebase account...</div>`;
                 let uid;
                 try {
-                    const cred = await createUserWithEmailAndPassword(auth, "hospitalbiskra@gmail.com", "hospital123456");
+                    const cred = await createUserWithEmailAndPassword(auth, email, password);
                     uid = cred.user.uid;
                 } catch (e) {
                     if (e.code === 'auth/email-already-in-use') {
                         status.innerHTML = `<div class="alert alert-warning">⚠️ Account already exists, linking to database...</div>`;
-                        const cred = await signInWithEmailAndPassword(auth, "hospitalbiskra@gmail.com", "hospital123456");
+                        const cred = await signInWithEmailAndPassword(auth, email, password);
                         uid = cred.user.uid;
                     } else throw e;
                 }
 
                 status.innerHTML = `<div class="alert alert-info">💾 Assigning Admin role...</div>`;
                 await set(ref(rtdb, 'users/' + uid), {
-                    email: "hospitalbiskra@gmail.com",
-                    fullName: "Biskra Hospital Admin",
+                    email: email,
+                    fullName: "Adem Admin",
                     role: "admin",
                     status: "approved",
                     createdAt: new Date().toISOString()
@@ -68,7 +68,7 @@
                 status.innerHTML = `
                     <div class="alert alert-success">
                         ✅ <strong>Success!</strong><br>
-                        Admin account created and authorized.<br><br>
+                        Admin account <strong>${email}</strong> created and authorized.<br><br>
                         <a href="login.html" class="btn btn-success btn-sm">Go to Login →</a>
                     </div>`;
                 btn.textContent = 'Done!';

@@ -348,43 +348,91 @@ function initData() {
 
     renderDoctorsTeam();
 
-    onValue(dbRef(rtdb, 'appointments'), (snap) => {
-        const tbody = document.getElementById('appointments-status-table');
-        const nextDiv = document.getElementById('next-appointment');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-        let next = null;
+    onValue(dbRef(rtdb, 'users'), (usersSnap) => {
+        const allUsers = usersSnap.val() || {};
 
-        if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`; return; }
+        onValue(dbRef(rtdb, 'appointments'), (snap) => {
+            const tbody = document.getElementById('appointments-status-table');
+            const nextDiv = document.getElementById('next-appointment');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let next = null;
 
-        const today = new Date().toISOString().split('T')[0];
-        const appointments = Object.entries(snap.val())
-            .filter(([id, app]) => app.patientId === user.uid && app.status !== 'deleted')
-            .sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
+            if (!snap.exists()) { tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-3">${translations[currentLanguage]?.no_appointments_yet || 'No appointments yet.'}</td></tr>`; return; }
 
-        appointments.forEach(([id, app]) => {
-            if (!next && app.status === 'approved' && app.date >= today) next = app;
+            const today = new Date().toISOString().split('T')[0];
+            const appointments = Object.entries(snap.val())
+                .filter(([id, app]) => app.patientId === user.uid && app.status !== 'deleted')
+                .sort((a, b) => new Date(b[1].date) - new Date(a[1].date));
 
-            const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
-                ? app.medicalFiles.map((fileObj, i) => {
-                    const url = typeof fileObj === 'string' ? fileObj : fileObj.url;
-                    const name = typeof fileObj === 'string' ? `File ${i + 1}` : (fileObj.name || `File ${i + 1}`);
-                    return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="${name}"><i class="fas fa-file"></i></a>`;
-                }).join('')
-                : '';
+            appointments.forEach(([id, app]) => {
+                if (!next && app.status === 'approved' && app.date >= today) next = app;
 
-            const row = document.createElement('tr');
-            row.innerHTML = `
+                const doctorDept = allUsers[app.doctorId]?.department || '—';
+                const translatedDept = translations[currentLanguage]?.[doctorDept] || doctorDept;
+
+                const filesHTML = (app.medicalFiles && app.medicalFiles.length > 0)
+                    ? app.medicalFiles.map((fileObj, i) => {
+                        const url = typeof fileObj === 'string' ? fileObj : fileObj.url;
+                        const name = typeof fileObj === 'string' ? `File ${i + 1}` : (fileObj.name || `File ${i + 1}`);
+                        return `<a href="${url}" target="_blank" class="btn btn-sm btn-outline-secondary me-1" title="${name}"><i class="fas fa-file"></i></a>`;
+                    }).join('')
+                    : '';
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
                 <td><div class="fw-bold mb-0">${app.doctorName}</div></td>
+                <td><span class="badge bg-light text-dark border">${translatedDept}</span></td>
                 <td><small>${app.date} | ${app.time}</small></td>
                 <td><span class="badge bg-${app.status === 'completed' ? 'info' : (app.status === 'approved' ? 'success' : (app.status === 'pending' ? 'warning text-dark' : 'danger'))}">${translations[currentLanguage]?.[app.status] || app.status}</span></td>
                 <td><div class="d-flex gap-1">${filesHTML}</div></td>`;
-            tbody.appendChild(row);
+                tbody.appendChild(row);
+            });
+
+            nextDiv.innerHTML = next
+                ? `<div class="text-primary fw-bold">${next.date} at ${next.time}</div><small class="text-muted">Dr. ${next.doctorName}</small>`
+                : `<p class="text-muted mb-0">${translations[currentLanguage]?.no_appointments || 'No upcoming appointments'}</p>`;
         });
 
-        nextDiv.innerHTML = next
-            ? `<div class="text-primary fw-bold">${next.date} at ${next.time}</div><small class="text-muted">Dr. ${next.doctorName}</small>`
-            : `<p class="text-muted mb-0">${translations[currentLanguage]?.no_appointments || 'No upcoming appointments'}</p>`;
+        onValue(dbRef(rtdb, 'certificates'), (snap) => {
+            const tbody = document.getElementById('patient-certificates-table');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            if (!snap.exists()) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-3">${translations[currentLanguage]?.no_certificates || 'No certificates available.'}</td></tr>`;
+                return;
+            }
+
+            const trans = window.translations || {};
+            const lang = window.currentLanguage || 'en';
+            const certs = Object.entries(snap.val())
+                .filter(([id, c]) => c.patientId === user.uid)
+                .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
+
+            if (certs.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-muted text-center py-3">${trans[lang]?.no_certificates || 'No certificates available.'}</td></tr>`;
+                return;
+            }
+
+            certs.forEach(([id, c]) => {
+                const doctorDept = allUsers[c.doctorId]?.department || '—';
+                const translatedDept = trans[lang]?.[doctorDept] || doctorDept;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                <td><div class="fw-bold mb-0">${c.doctorName}</div></td>
+                <td><span class="badge bg-light text-dark border">${translatedDept}</span></td>
+                <td><small>${c.sessionDate}</small></td>
+                <td><div class="small text-muted text-truncate" style="max-width: 250px;" title="${c.note}">${c.note || '—'}</div></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary" onclick="downloadCertificate('${id}')">
+                        <i class="fas fa-download me-1"></i> <span data-i18n="download">${trans[lang]?.download || 'Download'}</span>
+                    </button>
+                </td>`;
+                tbody.appendChild(row);
+            });
+        });
     });
 
     // Check if user is discharged and show a detailed notice
@@ -448,41 +496,6 @@ function initData() {
         });
     });
 
-    onValue(dbRef(rtdb, 'certificates'), (snap) => {
-        const tbody = document.getElementById('patient-certificates-table');
-        if (!tbody) return;
-        tbody.innerHTML = '';
-
-        if (!snap.exists()) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${translations[currentLanguage]?.no_certificates || 'No certificates available.'}</td></tr>`;
-            return;
-        }
-
-        const trans = window.translations || {};
-        const lang = window.currentLanguage || 'en';
-        const certs = Object.entries(snap.val())
-            .filter(([id, c]) => c.patientId === user.uid)
-            .sort((a, b) => new Date(b[1].createdAt) - new Date(a[1].createdAt));
-
-        if (certs.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="text-muted text-center py-3">${trans[lang]?.no_certificates || 'No certificates available.'}</td></tr>`;
-            return;
-        }
-
-        certs.forEach(([id, c]) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td><div class="fw-bold mb-0">${c.doctorName}</div></td>
-                <td><small>${c.sessionDate}</small></td>
-                <td><div class="small text-muted text-truncate" style="max-width: 250px;" title="${c.note}">${c.note || '—'}</div></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary" onclick="downloadCertificate('${id}')">
-                        <i class="fas fa-download me-1"></i> <span data-i18n="download">${trans[lang]?.download || 'Download'}</span>
-                    </button>
-                </td>`;
-            tbody.appendChild(row);
-        });
-    });
 }
 
 window.downloadCertificate = async (certId) => {

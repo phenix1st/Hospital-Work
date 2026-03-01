@@ -113,7 +113,7 @@ window.renderUsers = () => {
     const tbody = document.getElementById('all-users-table');
     const search = (document.getElementById('userSearch')?.value || '').toLowerCase();
 
-    let entries = Object.entries(allUsers).filter(([, u]) => u.role !== 'admin');
+    let entries = Object.entries(allUsers);
 
     if (userFilter === 'pending') entries = entries.filter(([, u]) => u.status === 'pending');
     else if (userFilter !== 'all') entries = entries.filter(([, u]) => u.role === userFilter);
@@ -232,6 +232,10 @@ window.rejectUser = async (uid) => {
 };
 
 window.deleteUser = async (uid) => {
+    if (uid === auth.currentUser?.uid) {
+        alert(translations[currentLanguage]?.cannot_delete_self || "You cannot delete your own account.");
+        return;
+    }
     if (confirm(translations[currentLanguage]?.confirm_delete_user || 'Permanently delete this user? This cannot be undone.')) {
         await remove(ref(rtdb, 'users/' + uid));
         await remove(ref(rtdb, 'public/doctors/' + uid));
