@@ -513,8 +513,8 @@ const translations = {
         medications_label: "Médicaments recommandés"
     },
     ar: {
-        title: "طبيبك عن بعد",
-        welcome: "مرحباً بكم في العيادة أونلاين",
+        title: "العيادة اونلاين",
+        welcome: "مرحباً بكم في العيادة اونلاين",
         welcome_desc: "قم بإدارة مواعيدك وسجلاتك الطبية بسهولة من خلال نظامنا الحديث والآمن. احجز موعدك وتواصل مع أطبائك في أي وقت.",
         book_now: "احجز الآن",
         view_doctors: "عرض الأطباء",
